@@ -181,7 +181,7 @@ npm start
 
 ## 👨‍💻 Team Contributions
 
-| Name                      | Role                              | GitHub Username                |
+| Name                      |  Models                           | GitHub Username                |
 | ------------------------- | --------------------------------- | ------------------------------ |
 | **Paranagama P.W\.K.D.M** | Staff Management, Auth            | [@dulsara30](#)                |
 | **Maddumahewa T.Y**       | Fleet & Delivery Management       | [@ThisaruYasanjith](#)         |
