@@ -3,24 +3,14 @@
     "target": "ES6",
     "module": "commonjs",
     "rootDir": "./src",
-    "outDir": "dist",
+    "outDir": "./dist",
     "sourceMap": true,
     "strict": true,
-    "lib": [
-      "esnext"
-    ],
+    "lib": ["ESNext"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "node",
-    "typeRoots": [
-      "./node_modules/@types",
-      "./src/types"
-    ]
+    "moduleResolution": "node"
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
