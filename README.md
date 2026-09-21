@@ -133,7 +133,7 @@ LOGISTICS-MANAGEMENT-SYSTEM/
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/dulsara30/logistics-management-system.git
+git clone https://github.com/your-org/logistics-management-system.git
 cd LOGISTICS-MANAGEMENT-SYSTEM
 ```
 
@@ -179,15 +179,15 @@ npm start
 
 ---
 
-## 👨‍💻 Team Contributions
+## 👨‍💻 System Modules & Features
 
-| Name                      |  Models                           | GitHub Username                |
-| ------------------------- | --------------------------------- | ------------------------------ |
-| **Paranagama P.W\.K.D.M** | Staff Management, Auth            | [@dulsara30](#)                |
-| **Maddumahewa T.Y**       | Fleet & Delivery Management       | [@ThisaruYasanjith](#)         |
-| **H.D.K Ariyadasa**       | Warehouse Management              | [@dilani365](#)                |
-| **Liyanaarachchi K**      | Inventory Management              | [@Kavindya-Liyanaarachchi](#)  |
-| **Malshani J.P.J**        | Supplier & Return/Damage Handling | [@Janeesha532](#)              |
+| Module | Features & Scope |
+| ------------------------- | --------------------------------- |
+| **Staff Management & Auth** | Staff registration, role management, authentication & salary handling |
+| **Fleet & Delivery Management** | Vehicle tracking, delivery scheduling & maintenance |
+| **Warehouse Management** | Warehouse capacity, maintenance tracking & manager assignments |
+| **Inventory Management** | Item CRUD, reorder alerts & stock tracking |
+| **Supplier & Return Handling** | Supplier records, return reports & damage handling |
 
 
 ---
