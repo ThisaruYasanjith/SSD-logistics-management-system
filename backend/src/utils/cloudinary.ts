@@ -33,7 +33,12 @@ export const uploadToCloudinary = async (file: Express.Multer.File, fileName: st
         },
         (error, result) => {
           if (error) {
-            reject(error instanceof Error ? error : new Error("Unknown Cloudinary error"));
+            const msg = error instanceof Error
+              ? error.message
+              : typeof error === "object" && error && "message" in error
+              ? String((error as any).message)
+              : JSON.stringify(error);
+            reject(new Error(msg));
           } else {
             resolve(result as CloudinaryUploadResponse);
           }
@@ -62,7 +67,12 @@ export const uploadQRCodeToCloudinary = async (qrCodeBuffer: Buffer, fileName: s
         },
         (error, result) => {
           if (error) {
-            reject(error instanceof Error ? error : new Error("Unknown Cloudinary error"));
+            const msg = error instanceof Error
+              ? error.message
+              : typeof error === "object" && error && "message" in error
+              ? String((error as any).message)
+              : JSON.stringify(error);
+            reject(new Error(msg));
           } else {
             resolve(result as CloudinaryUploadResponse);
           }

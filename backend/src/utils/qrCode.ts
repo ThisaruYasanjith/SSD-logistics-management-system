@@ -11,7 +11,11 @@ export async function generateQRCode(params: { email: string; fullName: string; 
 
 
   const qrCodeFileName = `${nic}-qrcode`;
-  const qrCodeUrl = await uploadQRCodeToCloudinary(qrCodeBuffer, qrCodeFileName, "staff_qr_codes");
-
-  return qrCodeUrl;
+  try {
+    const qrCodeUrl = await uploadQRCodeToCloudinary(qrCodeBuffer, qrCodeFileName, "staff_qr_codes");
+    return qrCodeUrl;
+  } catch (error) {
+    console.warn("Cloudinary QR upload failed, falling back to base64 Data URL:", error);
+    return `data:image/png;base64,${qrCodeBuffer.toString("base64")}`;
+  }
 }

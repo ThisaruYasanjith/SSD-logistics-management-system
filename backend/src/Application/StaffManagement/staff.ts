@@ -107,7 +107,12 @@ export const addStaff = async (req: Request, res: Response) => {
     let profilePic = null;
     if (req.file) {
       const fileName = `${nic}-profile`;
-      profilePic = await uploadToCloudinary(req.file, fileName, "staff_profile_pics");
+      try {
+        profilePic = await uploadToCloudinary(req.file, fileName, "staff_profile_pics");
+      } catch (uploadErr) {
+        console.warn("Cloudinary profile pic upload failed, falling back to base64 Data URL:", uploadErr);
+        profilePic = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+      }
     }
 
     const password = generatePassword();
@@ -142,7 +147,11 @@ export const addStaff = async (req: Request, res: Response) => {
       fullName: newStaff.fullName,
     });
 
-    await sendCredentialsEmail(trimmedEmail, trimmedFullName, password);
+    try {
+      await sendCredentialsEmail(trimmedEmail, trimmedFullName, password);
+    } catch (emailErr) {
+      console.warn("Could not send credentials email (check EMAIL_USER / EMAIL_PASS in .env):", emailErr);
+    }
 
     return res.status(201).json({ message: "Staff member added successfully" });
   } catch (error: unknown) {
