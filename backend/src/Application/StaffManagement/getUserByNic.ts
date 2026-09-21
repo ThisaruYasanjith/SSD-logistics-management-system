@@ -25,7 +25,7 @@ export const getUserByNic = async (req: Request, res: Response): Promise<void> =
       name: staff.fullName,
       role: staff.role,
       warehouse: staff.warehouseAssigned,
-      photo: staff.profilePic,
+      photo: staff.profilePic || "",
     };
 
     res.status(200).json(userDetails);

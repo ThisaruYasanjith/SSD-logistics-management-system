@@ -31,7 +31,8 @@ const staffSchema = new mongoose.Schema({
     },
     profilePic: {
         type: String,
-        required: true
+        required: false,
+        default: null
     },
     dateJoined: {
         type: Date,

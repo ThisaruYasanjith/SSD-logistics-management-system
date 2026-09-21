@@ -219,10 +219,7 @@ function AddStaff() {
       newErrors.NIC = "NIC must be either 9 digits followed by V/X (e.g., 123456789V) or 12 digits (e.g., 200012345678)";
     }
 
-    // Profile Picture: Already required, add dimension validation in handleImageChange
-    if (!profileImage) {
-      newErrors.profilePic = "Profile picture is required";
-    }
+    // Profile Picture is optional
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -520,7 +517,7 @@ function AddStaff() {
 
         {/* Profile Picture */}
         <div className="space-y-2">
-          <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700">Profile Picture *</label>
+          <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700">Profile Picture (Optional)</label>
           {profileImage ? (
             <div className="relative w-32 h-32">
               <img src={profileImage} alt="Profile" className="w-full h-full object-cover rounded-lg border" />

@@ -20,9 +20,15 @@ function AddSupplier() {
   const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setSubmitError("You must be logged in to add a supplier.");
+      navigate("/login");
+      return;
+    }
     const today = new Date().toISOString().split("T")[0];
     setFormData((prev) => ({ ...prev, date: today }));
-  }, []);
+  }, [navigate]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -128,7 +134,13 @@ function AddSupplier() {
       return;
     }
 
-    // Rest of your submit logic remains the same
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setSubmitError("You must be logged in to add a supplier.");
+      navigate("/login");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const itemsArray = formData.itemsName.split(",").map((item) => item.trim()).filter((item) => item !== "");
@@ -147,13 +159,16 @@ function AddSupplier() {
 
       const res = await fetch("http://localhost:8000/suppliers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `HTTP error! status: ${res.status}`);
       }
 
       setFormData({

@@ -211,11 +211,13 @@ function SupplierDetails() {
       setFormErrors(errors);
       return;
     }
+    const token = localStorage.getItem("token");
     try {
       const res = await fetch(`http://localhost:8000/suppliers/${editSupplier.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           name: editSupplier.name,
@@ -259,11 +261,13 @@ function SupplierDetails() {
   };
 
   const confirmDelete = async () => {
+    const token = localStorage.getItem("token");
     try {
       const res = await fetch(`http://localhost:8000/suppliers/${supplierToDelete.id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
       });
       if (!res.ok) {

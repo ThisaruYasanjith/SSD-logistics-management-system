@@ -109,9 +109,6 @@ export const addStaff = async (req: Request, res: Response) => {
       const fileName = `${nic}-profile`;
       profilePic = await uploadToCloudinary(req.file, fileName, "staff_profile_pics");
     }
-    if (!profilePic) {
-      return res.status(400).json({ message: "Profile picture is required" });
-    }
 
     const password = generatePassword();
     const hashedPassword = await bcrypt.hash(password, 10);

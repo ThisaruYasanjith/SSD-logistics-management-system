@@ -62,6 +62,12 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "All prices must be valid numbers" });
     }
 
+    const dateString = typeof date === "string" && date.includes("T") 
+      ? date.split("T")[0] 
+      : typeof date === "string" 
+      ? date 
+      : new Date(date).toISOString().split("T")[0];
+
     const newSupplier = new supplier({
       name,
       email,
@@ -69,7 +75,7 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
       items,
       quantity,
       price,
-      date: new Date(date),
+      date: dateString,
     });
 
     const savedSupplier = await newSupplier.save();
