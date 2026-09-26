@@ -13,24 +13,30 @@ export const stockoutInventory = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Find the item
-    const item = await inventory.findById(id);
-    if (!item) {
-      res.status(404).json({ error: "Item not found" });
+    // Atomic stock deduction - V07 Race Condition Fix - Sithum
+    const updatedItem = await inventory.findOneAndUpdate(
+      { _id: id, quantity: { $gte: quantity } },
+      {
+        $inc: { quantity: -quantity },
+        $set: { updatedIn: new Date() }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedItem) {
+      const existingItem = await inventory.findById(id);
+
+      if (!existingItem) {
+        res.status(404).json({ error: "Item not found" });
+        return;
+      }
+
+      res.status(400).json({
+        error: `Requested quantity (${quantity}) exceeds available stock (${existingItem.quantity})`
+      });
       return;
     }
 
-    // Validate quantity against available stock
-    if (quantity > item.quantity) {
-      res.status(400).json({ error: `Requested quantity (${quantity}) exceeds available stock (${item.quantity})` });
-      return;
-    }
-
-    // Update quantity
-    item.quantity -= quantity;
-    item.updatedIn = new Date();
-
-    const updatedItem = await item.save();
     res.status(200).json(updatedItem);
   } catch (err: any) {
     console.error("Error during stockout:", err);
