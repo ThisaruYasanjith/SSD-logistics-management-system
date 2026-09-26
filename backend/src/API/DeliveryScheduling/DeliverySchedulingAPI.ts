@@ -62,6 +62,18 @@ router.post('/Delivery', async (req, res) => {
 router.get('/Delivery', async (req, res) => {
     try {
       const deliverySchedules = await getDeliverySchedules();
+      // Delivery server-side data filtering - V06 Data Exposure Fix - Sithum
+      const user = (req as any).user;
+
+      if (user?.role === "Driver") {
+        const ownDeliverySchedules = deliverySchedules.filter(
+          (schedule) =>
+            String(schedule.driverUsername ?? "").toLowerCase() === String(user.email ?? "").toLowerCase()
+        );
+
+        return res.status(200).json(ownDeliverySchedules);
+      }
+
       res.status(200).json(deliverySchedules);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching delivery schedules', error });
