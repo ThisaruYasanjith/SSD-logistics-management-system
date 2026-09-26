@@ -117,15 +117,73 @@ export const deleteSupplier = async (req: Request, res: Response) => {
 // Update supplier
 export const updateSupplier = async (req: Request, res: Response) => {
   try {
+    const { name, email, contact, items, quantity, price, date } = req.body;
+
     const supplierToUpdate = await supplier.findById(req.params._id);
     if (!supplierToUpdate) {
       return res.status(404).json({ error: "Supplier not found" });
     }
 
-    const updatedSupplier = await supplier.findByIdAndUpdate(req.params._id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const updatePayload: Record<string, any> = {};
+
+    if (name !== undefined) updatePayload.name = name;
+    if (contact !== undefined) updatePayload.contact = contact;
+
+    if (email !== undefined) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+      updatePayload.email = email;
+    }
+
+    if (date !== undefined) {
+      if (isNaN(Date.parse(date))) {
+        return res.status(400).json({ error: "Invalid date format" });
+      }
+      updatePayload.date = typeof date === "string" && date.includes("T")
+        ? date.split("T")[0]
+        : typeof date === "string"
+        ? date
+        : new Date(date).toISOString().split("T")[0];
+    }
+
+    if (items !== undefined || quantity !== undefined || price !== undefined) {
+      const newItems = items !== undefined ? items : supplierToUpdate.items;
+      const newQuantity = quantity !== undefined ? quantity : supplierToUpdate.quantity;
+      const newPrice = price !== undefined ? price : supplierToUpdate.price;
+
+      if (!Array.isArray(newItems) || !Array.isArray(newQuantity) || !Array.isArray(newPrice)) {
+        return res.status(400).json({ error: "Items, quantity, and price must be arrays" });
+      }
+
+      if (newItems.length !== newQuantity.length || newItems.length !== newPrice.length) {
+        return res
+          .status(400)
+          .json({ error: "Items, quantity, and price arrays must have the same length" });
+      }
+
+      if (!newQuantity.every((qty: any) => typeof qty === "number" && !isNaN(qty))) {
+        return res.status(400).json({ error: "All quantities must be valid numbers" });
+      }
+
+      if (!newPrice.every((p: any) => typeof p === "number" && !isNaN(p))) {
+        return res.status(400).json({ error: "All prices must be valid numbers" });
+      }
+
+      if (items !== undefined) updatePayload.items = items;
+      if (quantity !== undefined) updatePayload.quantity = quantity;
+      if (price !== undefined) updatePayload.price = price;
+    }
+
+    const updatedSupplier = await supplier.findByIdAndUpdate(
+      req.params._id,
+      { $set: updatePayload },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     return res.status(200).json(updatedSupplier);
   } catch (err: any) {
