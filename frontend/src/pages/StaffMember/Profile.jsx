@@ -25,6 +25,7 @@ const Profile = () => {
   const [isUpdated, setIsUpdated] = useState(false);
   const [error, setError] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
@@ -132,6 +133,11 @@ const Profile = () => {
 
     // Validate password fields if they are filled
     if (newPassword || confirmPassword) {
+      // Require the current password when requesting a password change
+      if (!currentPassword) {
+        setMessage({ text: "Enter your current password to change your password", type: "error" });
+        return;
+      }
       if (newPassword !== confirmPassword) {
         setMessage({ text: "New password and confirm password do not match", type: "error" });
         return;
@@ -156,6 +162,7 @@ const Profile = () => {
         formDataToSend.append("profilePic", imageFile);
       }
       if (newPassword) {
+        formDataToSend.append("currentPassword", currentPassword);
         formDataToSend.append("newPassword", newPassword);
       }
 
@@ -176,6 +183,7 @@ const Profile = () => {
 
       setMessage({ text: "Profile updated successfully!", type: "success" });
       setImageFile(null);
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
@@ -403,6 +411,18 @@ const Profile = () => {
           <div className="bg-gray-50 p-6 rounded-lg space-y-4">
             <h3 className="text-lg font-semibold text-gray-800">Change Password</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Current Password</label>
+                <input
+                  id="currentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password to change your password"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">New Password</label>
                 <input
