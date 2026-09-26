@@ -1,4 +1,5 @@
 import Attendance from "../../Infrastructure/schemas/attendance";
+import staffMembers from "../../Infrastructure/schemas/staff";
 import dayjs from "dayjs";
 
 // Define the return type for the functions
@@ -12,6 +13,12 @@ export const checkInEmployee = async (nic: string): Promise<AttendanceResponse> 
   const today = dayjs().format("YYYY-MM-DD");
 
   try {
+    // Only create attendance for a nic belonging to an existing staff member
+    const employeeExists = await staffMembers.exists({ NIC: nic });
+    if (!employeeExists) {
+      return { success: false, message: "Staff member not found" };
+    }
+
     const existingAttendance = await Attendance.findOne({ nic, date: today });
     if (existingAttendance && existingAttendance.checkInTime) {
       return { success: false, message: "Already checked in today!" };
