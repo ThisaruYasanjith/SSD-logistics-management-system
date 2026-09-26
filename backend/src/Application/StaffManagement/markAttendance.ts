@@ -8,19 +8,32 @@ interface AttendanceApiResponse {
 }
 
 export const markAttendance = async (req: Request, res: Response): Promise<void> => {
-  const { nic, mode } = req.body;
+  const { nic, mode } = req.body ?? {};
 
   if (!nic || !mode) {
     res.status(400).json({ message: "NIC and mode are required" });
     return;
   }
 
+  // Reject objects and arrays so mongodB operators cannot be supplied as a nic
+  if (typeof nic !== "string") {
+    res.status(400).json({ message: "NIC must be a string" });
+    return;
+  }
+
+  // Normalize and validate the NIC using the formats accepted by staff registration
+  const normalizedNic = nic.trim().toUpperCase();
+  if (!/^(?:[0-9]{12}|[0-9]{9}[VX])$/.test(normalizedNic)) {
+    res.status(400).json({ message: "NIC must be 12 digits or 9 digits followed by V/X" });
+    return;
+  }
+
   try {
     let result: { success: boolean; message: string; data?: any };
     if (mode === "checkIn") {
-      result = await checkInEmployee(nic);
+      result = await checkInEmployee(normalizedNic);
     } else if (mode === "checkOut") {
-      result = await checkOutEmployee(nic);
+      result = await checkOutEmployee(normalizedNic);
     } else {
       res.status(400).json({ message: "Invalid mode" });
       return;
