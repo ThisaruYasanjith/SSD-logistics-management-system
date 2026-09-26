@@ -104,9 +104,36 @@ router.get('/Delivery/:Scheduleid', async (req, res) => {
 router.put('/Delivery/:Scheduleid', async (req, res) => {
 
   const { Scheduleid } = req.params; // Extract deliveryScheduleId from the route parameter
-  const updateData = req.body; // Extract the fields to be updated from the request body
+  let updateData = req.body; // Extract the fields to be updated from the request body
 
   try {
+    const user = (req as any).user;
+
+    // Driver field authorization - V04 Delivery Field Authorization Fix - Sithum
+    if (user?.role === "Driver") {
+      const schedule = await getDeliveryScheduleById(Scheduleid);
+
+      if (
+        schedule.driverUsername?.toLowerCase() !== user.email?.toLowerCase()
+      ) {
+        return res.status(403).json({
+          message: "Access denied: You can only update your own delivery schedules"
+        });
+      }
+
+      const requestedFields = Object.keys(req.body);
+
+      if (
+        requestedFields.length !== 1 ||
+        requestedFields[0] !== "status"
+      ) {
+        return res.status(403).json({
+          message: "Access denied: Drivers can only update delivery status"
+        });
+      }
+
+      updateData = { status: req.body.status };
+    }
     const result = await updateDeliveryScheduleById(Scheduleid, updateData); 
     res.json(result); // Send a success message if the update is successful
   } catch (error) {
