@@ -40,7 +40,12 @@ const DeliveryScheduleUpdate = () => {
     useEffect(() => {
         setLoading(true);
         axios
-            .get(`http://localhost:8000/api/Delivery/${ScheduleID}`)
+            // Delivery details request - V01 JWT Authentication Bypass Fix - Sithum
+            .get(`http://localhost:8000/api/Delivery/${ScheduleID}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            })
             .then((response) => {
                 setFormData(response.data);
                 setLoading(false);
@@ -59,7 +64,16 @@ const DeliveryScheduleUpdate = () => {
         if (name === "status") {
             setFormData((prevData) => ({ ...prevData, [name]: value }));
             axios
-                .put(`http://localhost:8000/api/Delivery/${ScheduleID}`, { status: value })
+                // Delivery status update - V01 JWT Authentication Bypass Fix - Sithum
+                .put(
+                    `http://localhost:8000/api/Delivery/${ScheduleID}`,
+                    { status: value },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                    }
+                )
                 .then(() => {
                     alert("Status updated successfully");
                 })

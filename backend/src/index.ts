@@ -25,6 +25,7 @@ import suppliersRouter from "./API/SpplierManagement/suppliers";
 import cors from "cors";
 import staffRouter from "./API/StaffManagement/staff";
 import loginRouter from "./API/login/login";
+import { authenticateToken as secureAuthenticateToken } from "./middleware/authentication";
 import getItemRouter from "./API/Return&DamageHandling/damageForm";
 import profileRouter from "./API/StaffManagement/profile";
 import QRRouter from "./API/StaffManagement/QRCode";
@@ -82,22 +83,22 @@ app.route("/returns/send-return-report").post(sendReturnReport);
 app.route("/returns/add-damage/:id").put(updateDamageReport);
 app.route("/returns/add-damage/:id").delete(deleteDamageReport);
 
-// Inventory management routes
+// Inventory management routes - V01 JWT Authentication Bypass Fix - Sithum
 app
   .route("/inventory")
-  .get(getAllInventoryManagement, getInventoryItems)
-  .post(createInventoryManagement);
+  .get(secureAuthenticateToken, getAllInventoryManagement, getInventoryItems)
+  .post(secureAuthenticateToken, createInventoryManagement);
 
 app
   .route("/inventory/:id")
-  .get(getInventoryById)
-  .put(updateInventory)
-  .delete(deleteInventoryManagement);
+  .get(secureAuthenticateToken, getInventoryById)
+  .put(secureAuthenticateToken, updateInventory)
+  .delete(secureAuthenticateToken, deleteInventoryManagement);
 
-// Stockout route
+// Inventory stockout route - V01 JWT Authentication Bypass Fix - Sithum
 app
   .route("/inventory/stockout/:id")
-  .post(stockoutInventory);
+  .post(secureAuthenticateToken, stockoutInventory);
 
 const PORT: number = Number(process.env.PORT) || 8000;
 

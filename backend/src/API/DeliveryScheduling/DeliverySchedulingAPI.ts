@@ -1,9 +1,13 @@
 
 import express from 'express';
 import {createDeliverySchedule,getDeliverySchedules,getDeliveryScheduleById,updateDeliveryScheduleById,deleteDeliveryScheduleByID} from "../../Application/DeliveryScheduling/DeliveryApp"
+import { authenticateToken as secureAuthenticateToken } from "../../middleware/authentication";
 
 
 const router = express.Router();
+
+// Delivery management routes - V01 JWT Authentication Bypass Fix - Sithum
+router.use(secureAuthenticateToken);
 
 
 // create delivery schedule
