@@ -128,7 +128,7 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
     return res.status(201).json(savedSupplier);
   } catch (err: any) {
     console.error("Error adding supplier:", err);
-    return res.status(500).json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 

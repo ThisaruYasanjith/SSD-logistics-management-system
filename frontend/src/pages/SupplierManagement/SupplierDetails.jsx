@@ -123,7 +123,8 @@ function SupplierDetails() {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch("http://localhost:8000/suppliers", {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+        const res = await fetch(`${API_BASE_URL}/suppliers`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -213,7 +214,8 @@ function SupplierDetails() {
     }
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/suppliers/${editSupplier.id}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const res = await fetch(`${API_BASE_URL}/suppliers/${editSupplier.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -263,7 +265,8 @@ function SupplierDetails() {
   const confirmDelete = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/suppliers/${supplierToDelete.id}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const res = await fetch(`${API_BASE_URL}/suppliers/${supplierToDelete.id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
