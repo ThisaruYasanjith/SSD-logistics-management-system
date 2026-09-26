@@ -1,6 +1,65 @@
 import { Request, Response } from "express";
 import supplier from "../../Infrastructure/schemas/suppliers";
 
+// Server-side validation helpers
+const validateName = (name: any): string | null => {
+  if (typeof name !== "string" || !/^[A-Za-z\s]{2,}$/.test(name.trim())) {
+    return "Name must contain at least 2 letters and only letters and spaces";
+  }
+  return null;
+};
+
+const validateEmail = (email: any): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (typeof email !== "string" || !emailRegex.test(email.trim())) {
+    return "Please enter a valid email address";
+  }
+  return null;
+};
+
+const validateContact = (contact: any): string | null => {
+  const contactStr = String(contact).trim();
+  if (!/^0[0-9]{9}$/.test(contactStr)) {
+    return "Phone number must be 10 digits and start with 0";
+  }
+  return null;
+};
+
+const validateDate = (date: any): string | null => {
+  if (!date || isNaN(Date.parse(date))) {
+    return "Invalid date format";
+  }
+  return null;
+};
+
+const validateItemsArrays = (items: any, quantity: any, price: any): string | null => {
+  if (!Array.isArray(items) || !Array.isArray(quantity) || !Array.isArray(price)) {
+    return "Items, quantity, and price must be arrays";
+  }
+
+  if (items.length === 0 || quantity.length === 0 || price.length === 0) {
+    return "Items, quantity, and price arrays cannot be empty";
+  }
+
+  if (items.length !== quantity.length || items.length !== price.length) {
+    return "Number of items, quantities, and prices must match";
+  }
+
+  if (!items.every((item: any) => typeof item === "string" && item.trim() !== "")) {
+    return "All item names must be non-empty strings";
+  }
+
+  if (!quantity.every((qty: any) => typeof qty === "number" && !isNaN(qty) && qty > 0)) {
+    return "Quantities must be positive numbers";
+  }
+
+  if (!price.every((p: any) => typeof p === "number" && !isNaN(p) && p > 0)) {
+    return "Unit prices must be positive numbers";
+  }
+
+  return null;
+};
+
 // Get all suppliers
 export const getAllSuppliers = async (req: Request, res: Response) => {
   try {
@@ -17,7 +76,7 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
   try {
     const { name, email, contact, items, quantity, price, date } = req.body;
 
-    // Detailed validation
+    // Presence checks
     const missingFields: string[] = [];
     if (!name) missingFields.push("name");
     if (!email) missingFields.push("email");
@@ -33,34 +92,21 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
         .json({ error: `Missing required fields: ${missingFields.join(", ")}` });
     }
 
-    // Additional email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
+    // Format & Value validations
+    const nameErr = validateName(name);
+    if (nameErr) return res.status(400).json({ error: nameErr });
 
-    // Validate date
-    if (isNaN(Date.parse(date))) {
-      return res.status(400).json({ error: "Invalid date format" });
-    }
+    const emailErr = validateEmail(email);
+    if (emailErr) return res.status(400).json({ error: emailErr });
 
-    if (!Array.isArray(items) || !Array.isArray(quantity) || !Array.isArray(price)) {
-      return res.status(400).json({ error: "Items, quantity, and price must be arrays" });
-    }
+    const contactErr = validateContact(contact);
+    if (contactErr) return res.status(400).json({ error: contactErr });
 
-    if (items.length !== quantity.length || items.length !== price.length) {
-      return res
-        .status(400)
-        .json({ error: "Items, quantity, and price arrays must have the same length" });
-    }
+    const dateErr = validateDate(date);
+    if (dateErr) return res.status(400).json({ error: dateErr });
 
-    if (!quantity.every((qty: any) => typeof qty === "number" && !isNaN(qty))) {
-      return res.status(400).json({ error: "All quantities must be valid numbers" });
-    }
-
-    if (!price.every((p: any) => typeof p === "number" && !isNaN(p))) {
-      return res.status(400).json({ error: "All prices must be valid numbers" });
-    }
+    const arraysErr = validateItemsArrays(items, quantity, price);
+    if (arraysErr) return res.status(400).json({ error: arraysErr });
 
     const dateString = typeof date === "string" && date.includes("T") 
       ? date.split("T")[0] 
@@ -69,10 +115,10 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
       : new Date(date).toISOString().split("T")[0];
 
     const newSupplier = new supplier({
-      name,
-      email,
-      contact,
-      items,
+      name: name.trim(),
+      email: email.trim(),
+      contact: String(contact).trim(),
+      items: items.map((i: string) => i.trim()),
       quantity,
       price,
       date: dateString,
@@ -146,21 +192,27 @@ export const updateSupplier = async (req: Request, res: Response) => {
 
     const updatePayload: Record<string, any> = {};
 
-    if (name !== undefined) updatePayload.name = name;
-    if (contact !== undefined) updatePayload.contact = contact;
+    if (name !== undefined) {
+      const err = validateName(name);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.name = name.trim();
+    }
+
+    if (contact !== undefined) {
+      const err = validateContact(contact);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.contact = String(contact).trim();
+    }
 
     if (email !== undefined) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: "Invalid email format" });
-      }
-      updatePayload.email = email;
+      const err = validateEmail(email);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.email = email.trim();
     }
 
     if (date !== undefined) {
-      if (isNaN(Date.parse(date))) {
-        return res.status(400).json({ error: "Invalid date format" });
-      }
+      const err = validateDate(date);
+      if (err) return res.status(400).json({ error: err });
       updatePayload.date = typeof date === "string" && date.includes("T")
         ? date.split("T")[0]
         : typeof date === "string"
@@ -173,25 +225,10 @@ export const updateSupplier = async (req: Request, res: Response) => {
       const newQuantity = quantity !== undefined ? quantity : supplierToUpdate.quantity;
       const newPrice = price !== undefined ? price : supplierToUpdate.price;
 
-      if (!Array.isArray(newItems) || !Array.isArray(newQuantity) || !Array.isArray(newPrice)) {
-        return res.status(400).json({ error: "Items, quantity, and price must be arrays" });
-      }
+      const arraysErr = validateItemsArrays(newItems, newQuantity, newPrice);
+      if (arraysErr) return res.status(400).json({ error: arraysErr });
 
-      if (newItems.length !== newQuantity.length || newItems.length !== newPrice.length) {
-        return res
-          .status(400)
-          .json({ error: "Items, quantity, and price arrays must have the same length" });
-      }
-
-      if (!newQuantity.every((qty: any) => typeof qty === "number" && !isNaN(qty) && qty >= 0)) {
-        return res.status(400).json({ error: "All quantities must be valid non-negative numbers" });
-      }
-
-      if (!newPrice.every((p: any) => typeof p === "number" && !isNaN(p) && p >= 0)) {
-        return res.status(400).json({ error: "All prices must be valid non-negative numbers" });
-      }
-
-      if (items !== undefined) updatePayload.items = items;
+      if (items !== undefined) updatePayload.items = items.map((i: string) => i.trim());
       if (quantity !== undefined) updatePayload.quantity = quantity;
       if (price !== undefined) updatePayload.price = price;
     }
