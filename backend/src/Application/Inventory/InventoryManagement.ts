@@ -63,6 +63,11 @@ export const createInventoryManagement = async (req: Request, res: Response): Pr
     return res.status(201).json(createdItem);
   } catch (error) {
     console.error("Error in createInventoryManagement:", error);
+    // Inventory server-side validation - V05 Fix - Sithum
+    if (error instanceof Error && error.name === "ValidationError") {
+      return res.status(400).json({ message: "Invalid inventory data" });
+    }
+
     return res.status(500).json({ message: "Internal server error" });
   }
 };
