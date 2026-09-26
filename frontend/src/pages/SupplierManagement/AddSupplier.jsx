@@ -130,7 +130,6 @@ function AddSupplier() {
     setSubmitError(null);
 
     if (!validateForm()) {
-      console.log("Form validation failed", errors);
       return;
     }
 
@@ -166,6 +165,12 @@ function AddSupplier() {
         },
         body: JSON.stringify(payload),
       });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
