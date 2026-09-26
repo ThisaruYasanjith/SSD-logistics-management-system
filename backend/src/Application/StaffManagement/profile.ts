@@ -30,7 +30,30 @@ export const getAllProfile = async (req: Request, res: Response) => {
 // Update staff (modified to accept id as a parameter)
 export const updateProfile = async (id: string, req: Request, res: Response) => {
   try {
-    const staffData = req.body;
+    // Allow only editable profile fields to prevent mass assignment
+    const allowedFields = [
+      "fullName", "email", "phoneNo", "DOB", "address",
+      "emName", "emRelation", "emNumber", "newPassword",
+    ];
+    const input = req.body;
+    // Require a request body object.
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      return res.status(400).json({ message: "Invalid profile data" });
+    }
+    // Reject unapproved fields and non string values
+    if (Object.entries(input).some(([key, value]) =>
+      !allowedFields.includes(key) || typeof value !== "string"
+    )) {
+      return res.status(400).json({ message: "Unsupported profile field or value" });
+    }
+
+    // Copy only approved fields supplied in the request
+    const staffData: Record<string, string> = {};
+    for (const field of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(input, field)) {
+        staffData[field] = input[field];
+      }
+    }
 
     if (req.file) {
       const fileName = `profile_${id}_${Date.now()}`;
@@ -45,7 +68,8 @@ export const updateProfile = async (id: string, req: Request, res: Response) => 
       delete staffData.newPassword; // Remove newPassword from the data
     }
 
-    const updatedStaff = await staffMembers.findByIdAndUpdate(id, staffData, { new: true });
+    // Update approved fields using $set operator
+    const updatedStaff = await staffMembers.findByIdAndUpdate(id, { $set: staffData }, { new: true });
     if (!updatedStaff) {
       return res.status(404).json({ message: "Staff not found" });
     }
