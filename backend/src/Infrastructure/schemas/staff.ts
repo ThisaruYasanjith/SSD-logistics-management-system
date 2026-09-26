@@ -50,7 +50,9 @@ const staffSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        // Exclude password hashes from normal staff queries
+        select: false
     },
     role: {
         type: String,
@@ -86,6 +88,14 @@ const staffSchema = new mongoose.Schema({
         default: null
     }
 }, { timestamps: true });
+
+// Remove the hash from JSON responses even when it was explicitly loaded
+staffSchema.set("toJSON", {
+    transform: (_doc, result: Record<string, unknown>) => {
+        delete result.password;
+        return result;
+    }
+});
 
 const staffMembers = mongoose.model("StaffMembers", staffSchema);
 
