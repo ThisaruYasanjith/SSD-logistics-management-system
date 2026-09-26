@@ -23,8 +23,8 @@ export const markAttendance = async (req: Request, res: Response): Promise<void>
 
   // Normalize and validate the NIC using the formats accepted by staff registration
   const normalizedNic = nic.trim().toUpperCase();
-  if (!/^(?:[0-9]{12}|[0-9]{9}[VX])$/.test(normalizedNic)) {
-    res.status(400).json({ message: "NIC must be 12 digits or 9 digits followed by V/X" });
+  if (!/^(?:[0-9]{12}|[0-9]{9}[V])$/.test(normalizedNic)) {
+    res.status(400).json({ message: "NIC must be 12 digits or 9 digits followed by V" });
     return;
   }
 
