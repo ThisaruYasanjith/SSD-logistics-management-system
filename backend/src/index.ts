@@ -1,6 +1,7 @@
 /// <reference path="./types/express.d.ts" />
 import "dotenv/config";
 import express, { Express, Request, Response, NextFunction } from "express";
+import { authenticateToken as realAuthenticateToken, authorizeRole } from "./middleware/authentication";
 import VehicleFleetRoutes from "./API/VehicleFleet/VehiclefleetAPI"; // Import routes
 import DeliverySchdeulingRoutes from "./API/DeliveryScheduling/DeliverySchedulingAPI";
 import MaintenenceRoute from "./API/VehicleFleet/VehicleMaintenanceAPI";
@@ -45,20 +46,8 @@ connectDB();
 // Routes that do not require authentication
 app.use("/", loginRouter);
 
-// Middleware to validate token for protected routes
-const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    res.status(401).json({ message: "No token provided" });
-    return;
-  }
-  // Validate token here (e.g., using JWT)
-  // For simplicity, assuming token is valid
-  next();
-};
-
-// Apply authentication middleware to protected routes
-app.use(authenticateToken);
+// Apply real JWT-verifying authentication middleware to all protected routes
+app.use(realAuthenticateToken);
 
 // Use your routes for API handling
 app.use("/api", VehicleFleetRoutes, DeliverySchdeulingRoutes, MaintenenceRoute);
@@ -78,9 +67,10 @@ app.use("/dashboard", QRRouter)
 app.use("/analytics", attendanceRoute);
 app.use("/leaves", leaveRoutes);
 
-app.route("/returns/send-return-report").post(sendReturnReport);
-app.route("/returns/add-damage/:id").put(updateDamageReport);
-app.route("/returns/add-damage/:id").delete(deleteDamageReport);
+const DAMAGE_MANAGER_ROLES = ["Business Owner", "Warehouse Manager", "Inventory Manager"];
+app.route("/returns/send-return-report").post(authorizeRole(DAMAGE_MANAGER_ROLES), sendReturnReport);
+app.route("/returns/add-damage/:id").put(authorizeRole(DAMAGE_MANAGER_ROLES), updateDamageReport);
+app.route("/returns/add-damage/:id").delete(authorizeRole(DAMAGE_MANAGER_ROLES), deleteDamageReport);
 
 // Inventory management routes
 app
