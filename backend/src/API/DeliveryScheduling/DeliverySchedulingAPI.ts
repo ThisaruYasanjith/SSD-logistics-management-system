@@ -77,7 +77,19 @@ router.get('/Delivery/:Scheduleid', async (req, res) => {
   
   try {
 
-    const schedule = await getDeliveryScheduleById(Scheduleid); 
+    const schedule = await getDeliveryScheduleById(Scheduleid);
+
+      // Delivery ownership validation - V03 BOLA IDOR Fix - Sithum
+      const user = (req as any).user;
+
+      if (
+        user?.role === "Driver" &&
+        schedule.driverUsername?.toLowerCase() !== user.email?.toLowerCase()
+      ) {
+        return res.status(403).json({
+          message: "Access denied: You can only access your own delivery schedules"
+        });
+      } 
     res.json(schedule); 
 
   } catch (error) {
