@@ -13,7 +13,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import {
   validateNIC,
@@ -28,34 +27,7 @@ import {
   validateDriverSelection,
 } from "./vehicleValidations";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api", // Adjust to 3001 if backend uses that port
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 function VehicleRegistrationForm() {
   const navigate = useNavigate();
   const [ownersNIC, setOwnersNIC] = useState("");
@@ -82,7 +54,7 @@ function VehicleRegistrationForm() {
         const response = await api.get("/drivers");
         setDrivers(response.data);
       } catch (error) {
-        setError(error.response?.data?.message || "Error fetching drivers.");
+        setError(errorMessage(error, "Error fetching drivers."));
         toast.error("Error fetching drivers.");
         console.error("Error fetching drivers:", error);
       } finally {
@@ -181,7 +153,7 @@ function VehicleRegistrationForm() {
       toast.success("Vehicle created successfully!");
       navigate("/vehicle");
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to create vehicle.");
+      setError(errorMessage(error, "Failed to create vehicle."));
       toast.error("Failed to create vehicle.");
       console.error("Error creating vehicle:", error);
     } finally {

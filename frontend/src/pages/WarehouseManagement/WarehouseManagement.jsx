@@ -8,38 +8,10 @@ import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import Fab from "@mui/material/Fab";
 import Tooltip from "@mui/material/Tooltip";
-import axios from "axios";
 import { toast } from "react-toastify";
 import CircularProgress from "@mui/material/CircularProgress";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function WarehouseManagement() {
   const navigate = useNavigate();
   const [warehouse, setWarehouse] = React.useState([]);
@@ -54,7 +26,7 @@ export default function WarehouseManagement() {
         const response = await api.get("/warehouse");
         setWarehouse(response.data);
       } catch (error) {
-        setError(error.response?.data?.message || "Error fetching warehouses.");
+        setError(errorMessage(error, "Error fetching warehouses."));
         toast.error("Error fetching warehouses.");
         console.error("Error fetching warehouse:", error);
       } finally {

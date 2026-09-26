@@ -1,50 +1,54 @@
 // validation.js
+//
+// NOTE: these checks are UX affordances only. The authoritative validation is
+// `backend/src/middleware/validation.ts`, which enforces the same rules on the
+// server. Keep the two in sync.
+
+const NIC_PATTERN = /^[0-9]{12,14}[vV]?$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
+const CONTACT_PATTERN = /^[0-9]{10}$/;
 
 export const validateNIC = (nic) => {
-  const nicPattern = /^[0-9]{12,14}v?$/i;
-
-  if (!nicPattern.test(nic)) {
-    return "NIC must be between 12-15 characters.";
+  if (!NIC_PATTERN.test(nic || "")) {
+    return "NIC must be 12-14 digits with an optional trailing 'v'.";
   }
   return null;
 };
 
 export const validateName = (name) => {
-  if (name.length < 3 || name.length > 100) {
+  if (!name || name.length < 3 || name.length > 100) {
     return "Owner's name must be between 3 and 100 characters.";
   }
   return null;
 };
 
 export const validateContactNumber = (contactNumber) => {
-  const contactPattern = /^[0-9]{10}$/;
-  if (!contactPattern.test(contactNumber)) {
+  if (!CONTACT_PATTERN.test(contactNumber || "")) {
     return "Contact number must be exactly 10 digits.";
   }
   return null;
 };
 
 export const validateAddress = (address) => {
-  if (address.length < 5 || address.length > 255) {
+  if (!address || address.length < 5 || address.length > 255) {
     return "Address must be between 5 and 255 characters.";
   }
   return null;
 };
 
 export const validateEmail = (email) => {
-  const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-  if (!emailPattern.test(email)) {
+  if (!EMAIL_PATTERN.test(email || "")) {
     return "Please enter a valid email address.";
   }
   return null;
 };
 
 export const validateVehicleNumber = (vehicleNumber) => {
-  if (vehicleNumber.length < 4) {
-    return "Vehicle number must be more than 4 characters.";
+  if (!vehicleNumber || vehicleNumber.length < 4) {
+    return "Vehicle number must be at least 4 characters.";
   }
   if (vehicleNumber.length > 20) {
-    return "Vehicle number must be less than 20 characters.";
+    return "Vehicle number must be 20 characters or fewer.";
   }
   return null;
 };
@@ -57,21 +61,25 @@ export const validateVehicleTypeAndFuelType = (vehicleType, fuelType) => {
 };
 
 export const validateVehicleBrand = (vehicleBrand) => {
-  if (vehicleBrand.length > 50 || vehicleBrand.length < 1) {
-    return "Vehicle brand must be inserted.";
+  if (!vehicleBrand || vehicleBrand.length < 1 || vehicleBrand.length > 50) {
+    return "Vehicle brand must be 1-50 characters.";
   }
   return null;
 };
 
 export const validateLoadCapacity = (loadCapacity) => {
-  if (loadCapacity <= 0) {
-    return "Load capacity must be a positive number.";
+  const value = Number(loadCapacity);
+  if (loadCapacity === "" || loadCapacity === null || loadCapacity === undefined) {
+    return "Load capacity is required.";
+  }
+  if (!Number.isFinite(value) || value < 0) {
+    return "Load capacity must be a non-negative number.";
   }
   return null;
 };
 
 export const validateDriverSelection = (selectedDriver) => {
-  if (!selectedDriver || selectedDriver === '') {
+  if (!selectedDriver || selectedDriver === "") {
     return "Please assign a driver to the vehicle.";
   }
   return null;

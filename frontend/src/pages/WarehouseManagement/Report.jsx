@@ -1,35 +1,7 @@
-import axios from "axios";
 import { jsPDF } from "jspdf";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 const reportgenarate = async () => {
   try {
     // Fetch both maintenance and routing maintenance data
@@ -204,7 +176,7 @@ const reportgenarate = async () => {
     const message =
       error.response?.status === 401 || error.response?.status === 403
         ? "Authentication failed. Please log in again."
-        : error.response?.data?.message || "Failed to generate report.";
+        : errorMessage(error, "Failed to generate report.");
     console.error("Error generating report:", error);
     toast.error(message);
     throw new Error(message);

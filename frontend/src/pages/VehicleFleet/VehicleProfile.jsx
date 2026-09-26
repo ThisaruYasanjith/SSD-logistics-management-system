@@ -20,7 +20,6 @@ import {
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
-import axios from "axios";
 import { toast } from "react-toastify";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import ReportDownloader from "./MaintenanceSpecificVehicleReport";
@@ -37,34 +36,7 @@ import {
   validateDriverSelection,
 } from "./vehicleValidations";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api", // Adjust to 3001 if backend uses that port
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 const StyledTableHead = styled(TableHead)(() => ({
   backgroundColor: "#f0f0f0",
 }));
@@ -134,7 +106,7 @@ export default function VehicleProfile() {
       toast.success("Vehicle deleted successfully.");
       navigate("/vehicle");
     } catch (error) {
-      setError(error.response?.data?.message || "Error deleting vehicle.");
+      setError(errorMessage(error, "Error deleting vehicle."));
       toast.error("Error deleting vehicle.");
       console.error("Error deleting vehicle:", error);
     } finally {
@@ -180,7 +152,7 @@ export default function VehicleProfile() {
       toast.success("Vehicle updated successfully.");
       setEditMode(false);
     } catch (error) {
-      setError(error.response?.data?.message || "Error saving vehicle details.");
+      setError(errorMessage(error, "Error saving vehicle details."));
       toast.error("Error saving vehicle details.");
       console.error("Error saving vehicle details:", error);
     } finally {
@@ -198,7 +170,7 @@ export default function VehicleProfile() {
         setOriginalData(response.data);
         setMaintenanceData(response.data.Maintenance || []);
       } catch (error) {
-        setError(error.response?.data?.message || "Error fetching vehicle details.");
+        setError(errorMessage(error, "Error fetching vehicle details."));
         toast.error("Error fetching vehicle details.");
         console.error("Error fetching vehicle details:", error);
       } finally {
@@ -211,7 +183,7 @@ export default function VehicleProfile() {
         const response = await api.get("/drivers");
         setDrivers(response.data);
       } catch (error) {
-        setError(error.response?.data?.message || "Error fetching drivers.");
+        setError(errorMessage(error, "Error fetching drivers."));
         toast.error("Error fetching drivers.");
         console.error("Error fetching drivers:", error);
       }

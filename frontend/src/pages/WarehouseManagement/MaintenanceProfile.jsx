@@ -14,40 +14,12 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
-import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const priorityOptions = ["Low", "Medium", "High"];
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function MaintenanceFormTwo() {
   const [editMode, setEditMode] = useState(false);
   const { requestId } = useParams();
@@ -137,7 +109,7 @@ export default function MaintenanceFormTwo() {
       toast.success("Maintenance request updated successfully!");
       navigate("/warehouse/Maintainance");
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to update request.");
+      setError(errorMessage(error, "Failed to update request."));
       toast.error("Failed to update request.");
       console.error("Update failed:", error);
     } finally {
@@ -158,7 +130,7 @@ export default function MaintenanceFormTwo() {
       setDeleteDialogOpen(false);
       navigate("/warehouse/Maintainance");
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to delete request.");
+      setError(errorMessage(error, "Failed to delete request."));
       toast.error("Failed to delete request.");
       console.error("Delete failed:", error);
       setDeleteDialogOpen(false);
