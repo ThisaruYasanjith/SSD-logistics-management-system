@@ -183,12 +183,12 @@ export const updateSupplier = async (req: Request, res: Response) => {
           .json({ error: "Items, quantity, and price arrays must have the same length" });
       }
 
-      if (!newQuantity.every((qty: any) => typeof qty === "number" && !isNaN(qty))) {
-        return res.status(400).json({ error: "All quantities must be valid numbers" });
+      if (!newQuantity.every((qty: any) => typeof qty === "number" && !isNaN(qty) && qty >= 0)) {
+        return res.status(400).json({ error: "All quantities must be valid non-negative numbers" });
       }
 
-      if (!newPrice.every((p: any) => typeof p === "number" && !isNaN(p))) {
-        return res.status(400).json({ error: "All prices must be valid numbers" });
+      if (!newPrice.every((p: any) => typeof p === "number" && !isNaN(p) && p >= 0)) {
+        return res.status(400).json({ error: "All prices must be valid non-negative numbers" });
       }
 
       if (items !== undefined) updatePayload.items = items;
