@@ -13,7 +13,37 @@ import {
 import multer from "multer";
 
 // Configure multer for file uploads
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  // Limit attachment and form sizes before they are buffered in memory
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 1,
+    fields: 4,
+    fieldSize: 16 * 1024,
+    parts: 6,
+  },
+});
+
+// Return a clear client error instead of continuing with a rejected upload
+const uploadAttachment: express.RequestHandler = (req, res, next) => {
+  upload.single("attachment")(req, res, (error: unknown) => {
+    if (error instanceof multer.MulterError) {
+      const tooLarge = error.code === "LIMIT_FILE_SIZE";
+      res.status(tooLarge ? 413 : 400).json({
+        message: tooLarge
+          ? "Leave attachment must be smaller than 5 MB"
+          : "Invalid leave upload. Too many files, fields or oversized form data",
+      });
+      return;
+    }
+    if (error) {
+      next(error);
+      return;
+    }
+    next();
+  });
+};
 
 const leaveRoutes = express.Router();
 
@@ -26,7 +56,7 @@ leaveRoutes
   .post(
     authenticateToken,
     authorizeRole(ALL_ROLES),
-    upload.single("attachment"),
+    uploadAttachment,
     createLeaveRequest
   );
 
@@ -35,7 +65,7 @@ leaveRoutes
   .put(
     authenticateToken,
     authorizeRole(ALL_ROLES),
-    upload.single("attachment"),
+    uploadAttachment,
     updateLeaveRequest
   )
   .delete(authenticateToken, deleteLeaveRequest);
