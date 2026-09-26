@@ -1,18 +1,19 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import supplier from "../../Infrastructure/schemas/suppliers";
 
 // Server-side validation helpers
 const validateName = (name: any): string | null => {
-  if (typeof name !== "string" || !/^[A-Za-z\s]{2,}$/.test(name.trim())) {
-    return "Name must contain at least 2 letters and only letters and spaces";
+  if (typeof name !== "string" || !/^[A-Za-z\s]{2,100}$/.test(name.trim())) {
+    return "Name must contain 2-100 characters and only letters and spaces";
   }
   return null;
 };
 
 const validateEmail = (email: any): string | null => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (typeof email !== "string" || !emailRegex.test(email.trim())) {
-    return "Please enter a valid email address";
+  if (typeof email !== "string" || email.length > 100 || !emailRegex.test(email.trim())) {
+    return "Please enter a valid email address (max 100 characters)";
   }
   return null;
 };
@@ -41,20 +42,24 @@ const validateItemsArrays = (items: any, quantity: any, price: any): string | nu
     return "Items, quantity, and price arrays cannot be empty";
   }
 
+  if (items.length > 100 || quantity.length > 100 || price.length > 100) {
+    return "Items array exceeds maximum allowed limit of 100 items";
+  }
+
   if (items.length !== quantity.length || items.length !== price.length) {
     return "Number of items, quantities, and prices must match";
   }
 
-  if (!items.every((item: any) => typeof item === "string" && item.trim() !== "")) {
-    return "All item names must be non-empty strings";
+  if (!items.every((item: any) => typeof item === "string" && item.trim().length >= 1 && item.trim().length <= 100)) {
+    return "All item names must be strings between 1 and 100 characters";
   }
 
-  if (!quantity.every((qty: any) => typeof qty === "number" && !isNaN(qty) && qty > 0)) {
-    return "Quantities must be positive numbers";
+  if (!quantity.every((qty: any) => typeof qty === "number" && Number.isFinite(qty) && qty > 0 && qty <= 1000000)) {
+    return "Quantities must be positive numbers (max 1,000,000)";
   }
 
-  if (!price.every((p: any) => typeof p === "number" && !isNaN(p) && p > 0)) {
-    return "Unit prices must be positive numbers";
+  if (!price.every((p: any) => typeof p === "number" && Number.isFinite(p) && p > 0 && p <= 100000000)) {
+    return "Unit prices must be positive numbers (max 100,000,000)";
   }
 
   return null;
@@ -74,6 +79,16 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
 // Create a new supplier
 export const createSupplierManagement = async (req: Request, res: Response) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: Authentication required" });
+    }
+
+    const allowedRoles = ["Business Owner", "Warehouse Manager"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "Access denied: Insufficient permissions to create supplier" });
+    }
+
     const { name, email, contact, items, quantity, price, date } = req.body;
 
     // Presence checks
@@ -135,6 +150,10 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
 // Get supplier by ID
 export const getSupplierById = async (req: Request, res: Response) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params._id)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+
     const supplierData = await supplier.findById(req.params._id);
     if (!supplierData) {
       return res.status(404).json({ error: "Supplier not found" });
@@ -159,6 +178,10 @@ export const deleteSupplier = async (req: Request, res: Response) => {
       return res.status(403).json({ error: "Access denied: Insufficient permissions to delete supplier" });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(req.params._id)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+
     const deletedSupplier = await supplier.findByIdAndDelete(req.params._id);
     if (!deletedSupplier) {
       return res.status(404).json({ error: "Supplier not found" });
@@ -178,9 +201,13 @@ export const updateSupplier = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Unauthorized: Authentication required" });
     }
 
-    const allowedRoles = ["Business Owner", "Warehouse Manager", "Inventory Manager"];
+    const allowedRoles = ["Business Owner", "Warehouse Manager"];
     if (!allowedRoles.includes(user.role)) {
       return res.status(403).json({ error: "Access denied: Insufficient permissions to update supplier" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params._id)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
     }
 
     const { name, email, contact, items, quantity, price, date } = req.body;
