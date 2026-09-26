@@ -113,7 +113,7 @@ function SupplierDetails() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("You must be looged in to view Supplier Details");
+      setError("You must be logged in to view Supplier Details");
       setIsLoading(false);
       navigate("/login");
       return;
@@ -131,8 +131,14 @@ function SupplierDetails() {
             "Content-Type": "application/json"
           },
         });
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
         const normalizedData = normalizeSupplierData(data);
@@ -146,7 +152,7 @@ function SupplierDetails() {
       }
     };
     getSuppliers();
-  }, []);
+  }, [navigate]);
 
   // Modified Search and Sort useEffect - Added quantity search
   useEffect(() => {
@@ -213,6 +219,10 @@ function SupplierDetails() {
       return;
     }
     const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
       const res = await fetch(`${API_BASE_URL}/suppliers/${editSupplier.id}`, {
@@ -231,11 +241,16 @@ function SupplierDetails() {
           date: editSupplier.date,
         }),
       });
-      if (!res.ok) {
-        throw new Error("Failed to update supplier");
-      } else {
-        alert(`Supplier: ${editSupplier.name} Update Successful!`);
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
       }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update supplier");
+      }
+      alert(`Supplier: ${editSupplier.name} Update Successful!`);
       const updatedSupplier = await res.json();
       const normalizedUpdatedSupplier = normalizeSupplierData([updatedSupplier])[0];
       setSuppliers(
@@ -250,7 +265,6 @@ function SupplierDetails() {
       );
       setIsEditModalOpen(false);
       setFormErrors({});
-      location.reload();
     } catch (err) {
       console.error("Error updating supplier:", err);
       setError(err.message);
@@ -264,6 +278,10 @@ function SupplierDetails() {
 
   const confirmDelete = async () => {
     const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
       const res = await fetch(`${API_BASE_URL}/suppliers/${supplierToDelete.id}`, {
@@ -273,8 +291,14 @@ function SupplierDetails() {
           "Authorization": `Bearer ${token}`
         },
       });
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
       if (!res.ok) {
-        throw new Error("Failed to delete supplier");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to delete supplier");
       }
       setSuppliers(suppliers.filter((sup) => sup.id !== supplierToDelete.id));
       setFilteredSuppliers(
@@ -309,7 +333,8 @@ function SupplierDetails() {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `supplier_${supplier.id}_report.txt`;
+    const safeId = String(supplier.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
+    link.download = `supplier_${safeId}_report.txt`;
     link.click();
     window.URL.revokeObjectURL(url);
   };
