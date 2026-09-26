@@ -8,6 +8,7 @@ function Items({ type }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
   const [updateError, setUpdateError] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [emailError, setEmailError] = useState(null);
@@ -51,7 +52,7 @@ function Items({ type }) {
           throw new Error('You must be logged in to view damage reports');
         }
 
-        const response = await fetch('http://localhost:8000/returns/add-damage', {
+        const response = await fetch(`${API_BASE_URL}/returns/add-damage`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -99,7 +100,7 @@ function Items({ type }) {
   const handleSendEmail = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/returns/send-return-report', {
+      const response = await fetch(`${API_BASE_URL}/returns/send-return-report`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,7 +164,7 @@ function Items({ type }) {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/returns/add-damage/${editReport.id}`, {
+      const response = await fetch(`${API_BASE_URL}/returns/add-damage/${editReport.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -199,7 +200,7 @@ function Items({ type }) {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/returns/add-damage/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/returns/add-damage/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
