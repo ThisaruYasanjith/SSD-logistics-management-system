@@ -103,6 +103,16 @@ export const getSupplierById = async (req: Request, res: Response) => {
 // Delete supplier
 export const deleteSupplier = async (req: Request, res: Response) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: Authentication required" });
+    }
+
+    const allowedRoles = ["Business Owner", "Warehouse Manager"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "Access denied: Insufficient permissions to delete supplier" });
+    }
+
     const deletedSupplier = await supplier.findByIdAndDelete(req.params._id);
     if (!deletedSupplier) {
       return res.status(404).json({ error: "Supplier not found" });
@@ -117,6 +127,16 @@ export const deleteSupplier = async (req: Request, res: Response) => {
 // Update supplier
 export const updateSupplier = async (req: Request, res: Response) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: Authentication required" });
+    }
+
+    const allowedRoles = ["Business Owner", "Warehouse Manager", "Inventory Manager"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "Access denied: Insufficient permissions to update supplier" });
+    }
+
     const { name, email, contact, items, quantity, price, date } = req.body;
 
     const supplierToUpdate = await supplier.findById(req.params._id);
