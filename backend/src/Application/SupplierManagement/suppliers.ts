@@ -1,5 +1,69 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import supplier from "../../Infrastructure/schemas/suppliers";
+
+// Server-side validation helpers
+const validateName = (name: any): string | null => {
+  if (typeof name !== "string" || !/^[A-Za-z\s]{2,100}$/.test(name.trim())) {
+    return "Name must contain 2-100 characters and only letters and spaces";
+  }
+  return null;
+};
+
+const validateEmail = (email: any): string | null => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (typeof email !== "string" || email.length > 100 || !emailRegex.test(email.trim())) {
+    return "Please enter a valid email address (max 100 characters)";
+  }
+  return null;
+};
+
+const validateContact = (contact: any): string | null => {
+  const contactStr = String(contact).trim();
+  if (!/^0[0-9]{9}$/.test(contactStr)) {
+    return "Phone number must be 10 digits and start with 0";
+  }
+  return null;
+};
+
+const validateDate = (date: any): string | null => {
+  if (!date || isNaN(Date.parse(date))) {
+    return "Invalid date format";
+  }
+  return null;
+};
+
+const validateItemsArrays = (items: any, quantity: any, price: any): string | null => {
+  if (!Array.isArray(items) || !Array.isArray(quantity) || !Array.isArray(price)) {
+    return "Items, quantity, and price must be arrays";
+  }
+
+  if (items.length === 0 || quantity.length === 0 || price.length === 0) {
+    return "Items, quantity, and price arrays cannot be empty";
+  }
+
+  if (items.length > 100 || quantity.length > 100 || price.length > 100) {
+    return "Items array exceeds maximum allowed limit of 100 items";
+  }
+
+  if (items.length !== quantity.length || items.length !== price.length) {
+    return "Number of items, quantities, and prices must match";
+  }
+
+  if (!items.every((item: any) => typeof item === "string" && item.trim().length >= 1 && item.trim().length <= 100)) {
+    return "All item names must be strings between 1 and 100 characters";
+  }
+
+  if (!quantity.every((qty: any) => typeof qty === "number" && Number.isFinite(qty) && qty > 0 && qty <= 1000000)) {
+    return "Quantities must be positive numbers (max 1,000,000)";
+  }
+
+  if (!price.every((p: any) => typeof p === "number" && Number.isFinite(p) && p > 0 && p <= 100000000)) {
+    return "Unit prices must be positive numbers (max 100,000,000)";
+  }
+
+  return null;
+};
 
 // Get all suppliers
 export const getAllSuppliers = async (req: Request, res: Response) => {
@@ -15,9 +79,19 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
 // Create a new supplier
 export const createSupplierManagement = async (req: Request, res: Response) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: Authentication required" });
+    }
+
+    const allowedRoles = ["Business Owner", "Warehouse Manager"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "Access denied: Insufficient permissions to create supplier" });
+    }
+
     const { name, email, contact, items, quantity, price, date } = req.body;
 
-    // Detailed validation
+    // Presence checks
     const missingFields: string[] = [];
     if (!name) missingFields.push("name");
     if (!email) missingFields.push("email");
@@ -33,34 +107,21 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
         .json({ error: `Missing required fields: ${missingFields.join(", ")}` });
     }
 
-    // Additional email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
+    // Format & Value validations
+    const nameErr = validateName(name);
+    if (nameErr) return res.status(400).json({ error: nameErr });
 
-    // Validate date
-    if (isNaN(Date.parse(date))) {
-      return res.status(400).json({ error: "Invalid date format" });
-    }
+    const emailErr = validateEmail(email);
+    if (emailErr) return res.status(400).json({ error: emailErr });
 
-    if (!Array.isArray(items) || !Array.isArray(quantity) || !Array.isArray(price)) {
-      return res.status(400).json({ error: "Items, quantity, and price must be arrays" });
-    }
+    const contactErr = validateContact(contact);
+    if (contactErr) return res.status(400).json({ error: contactErr });
 
-    if (items.length !== quantity.length || items.length !== price.length) {
-      return res
-        .status(400)
-        .json({ error: "Items, quantity, and price arrays must have the same length" });
-    }
+    const dateErr = validateDate(date);
+    if (dateErr) return res.status(400).json({ error: dateErr });
 
-    if (!quantity.every((qty: any) => typeof qty === "number" && !isNaN(qty))) {
-      return res.status(400).json({ error: "All quantities must be valid numbers" });
-    }
-
-    if (!price.every((p: any) => typeof p === "number" && !isNaN(p))) {
-      return res.status(400).json({ error: "All prices must be valid numbers" });
-    }
+    const arraysErr = validateItemsArrays(items, quantity, price);
+    if (arraysErr) return res.status(400).json({ error: arraysErr });
 
     const dateString = typeof date === "string" && date.includes("T") 
       ? date.split("T")[0] 
@@ -69,10 +130,10 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
       : new Date(date).toISOString().split("T")[0];
 
     const newSupplier = new supplier({
-      name,
-      email,
-      contact,
-      items,
+      name: name.trim(),
+      email: email.trim(),
+      contact: String(contact).trim(),
+      items: items.map((i: string) => i.trim()),
       quantity,
       price,
       date: dateString,
@@ -82,13 +143,17 @@ export const createSupplierManagement = async (req: Request, res: Response) => {
     return res.status(201).json(savedSupplier);
   } catch (err: any) {
     console.error("Error adding supplier:", err);
-    return res.status(500).json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // Get supplier by ID
 export const getSupplierById = async (req: Request, res: Response) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params._id)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+
     const supplierData = await supplier.findById(req.params._id);
     if (!supplierData) {
       return res.status(404).json({ error: "Supplier not found" });
@@ -103,6 +168,20 @@ export const getSupplierById = async (req: Request, res: Response) => {
 // Delete supplier
 export const deleteSupplier = async (req: Request, res: Response) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: Authentication required" });
+    }
+
+    const allowedRoles = ["Business Owner", "Warehouse Manager"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "Access denied: Insufficient permissions to delete supplier" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params._id)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+
     const deletedSupplier = await supplier.findByIdAndDelete(req.params._id);
     if (!deletedSupplier) {
       return res.status(404).json({ error: "Supplier not found" });
@@ -117,15 +196,78 @@ export const deleteSupplier = async (req: Request, res: Response) => {
 // Update supplier
 export const updateSupplier = async (req: Request, res: Response) => {
   try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized: Authentication required" });
+    }
+
+    const allowedRoles = ["Business Owner", "Warehouse Manager"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "Access denied: Insufficient permissions to update supplier" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params._id)) {
+      return res.status(400).json({ error: "Invalid supplier ID format" });
+    }
+
+    const { name, email, contact, items, quantity, price, date } = req.body;
+
     const supplierToUpdate = await supplier.findById(req.params._id);
     if (!supplierToUpdate) {
       return res.status(404).json({ error: "Supplier not found" });
     }
 
-    const updatedSupplier = await supplier.findByIdAndUpdate(req.params._id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const updatePayload: Record<string, any> = {};
+
+    if (name !== undefined) {
+      const err = validateName(name);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.name = name.trim();
+    }
+
+    if (contact !== undefined) {
+      const err = validateContact(contact);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.contact = String(contact).trim();
+    }
+
+    if (email !== undefined) {
+      const err = validateEmail(email);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.email = email.trim();
+    }
+
+    if (date !== undefined) {
+      const err = validateDate(date);
+      if (err) return res.status(400).json({ error: err });
+      updatePayload.date = typeof date === "string" && date.includes("T")
+        ? date.split("T")[0]
+        : typeof date === "string"
+        ? date
+        : new Date(date).toISOString().split("T")[0];
+    }
+
+    if (items !== undefined || quantity !== undefined || price !== undefined) {
+      const newItems = items !== undefined ? items : supplierToUpdate.items;
+      const newQuantity = quantity !== undefined ? quantity : supplierToUpdate.quantity;
+      const newPrice = price !== undefined ? price : supplierToUpdate.price;
+
+      const arraysErr = validateItemsArrays(newItems, newQuantity, newPrice);
+      if (arraysErr) return res.status(400).json({ error: arraysErr });
+
+      if (items !== undefined) updatePayload.items = items.map((i: string) => i.trim());
+      if (quantity !== undefined) updatePayload.quantity = quantity;
+      if (price !== undefined) updatePayload.price = price;
+    }
+
+    const updatedSupplier = await supplier.findByIdAndUpdate(
+      req.params._id,
+      { $set: updatePayload },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     return res.status(200).json(updatedSupplier);
   } catch (err: any) {

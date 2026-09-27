@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
 
 // Layouts
 import RootLayout from './layouts/root.layout.jsx';
@@ -95,7 +97,7 @@ const router = createBrowserRouter([
           {
             path: "warehouse",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff"]}>
                 <WarehouseManagement />
               </ProtectedRoute>
             )
@@ -111,7 +113,7 @@ const router = createBrowserRouter([
           {
             path: "warehouse/WarehouseDetails/:WarehouseID",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff"]}>
                 <WarehouseForm />
               </ProtectedRoute>
             )
@@ -119,7 +121,7 @@ const router = createBrowserRouter([
           {
             path: "warehouse/Maintainance",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Staff"]}>
                 <Maintainance />
               </ProtectedRoute>
             )
@@ -160,7 +162,7 @@ const router = createBrowserRouter([
           {
             path: "fleet",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff", "Driver"]}>
                 <VehicleFleetManagement />
               </ProtectedRoute>
             )
@@ -176,7 +178,7 @@ const router = createBrowserRouter([
           {
             path: "fleet/VehicleProfile/:VehicleNumber",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff", "Driver"]}>
                 <Vehicleprofile />
               </ProtectedRoute>
             )
@@ -447,8 +449,12 @@ const router = createBrowserRouter([
   }
 ]);
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <RouterProvider router={router} />
+    </GoogleOAuthProvider>
   </React.StrictMode>,
 );

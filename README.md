@@ -1,23 +1,37 @@
 # GrocerEase Lanka – Logistics Management System
 
-A full-stack logistics and warehouse management web application designed for efficient handling of staff, inventory, suppliers, delivery vehicles, and warehouse operations in a grocery logistics environment.
+A secure full-stack logistics and warehouse management web application designed for efficient handling of staff, inventory, suppliers, delivery vehicles, and warehouse operations in a grocery logistics environment.
 
-> Built with the **MERN Stack** – MongoDB, Express.js, React, and Node.js  
-> Backend: **TypeScript** | Frontend: **JavaScript** | File Uploads via **Cloudinary**
+> Built with the **MERN Stack** – MongoDB, Express.js, React (Vite), and Node.js  
+> Backend: **TypeScript** | Frontend: **JavaScript (React 19)** | Authentication: **JWT + OAuth 2.0 / OpenID Connect (Google Auth)** | File Uploads: **Cloudinary**
 
 ---
+
+## 📌 Repository Information
+
+### 1. GROUP MEMBERS
+- Member 1 Name: [Maddumahewa T.Y.] | Student ID: [IT23183636]
+- Member 2 Name: [Perera K.M.A] | Student ID: [IT23201750]
+- Member 3 Name: [Jayalal G.M.S.B] | Student ID: [IT23177482]
+- Member 4 Name: [A.A Abitharshan] | Student ID: [IT23393516]
+
+### 2. ORIGINAL PROJECT REPOSITORY
+- **Original GitHub URL**: https://github.com/dulsara30/logistics-management-system
+- **Source Reference & Attribution**: Forked and adapted from the original open-source Logistics Management System developed by **dulsara30** and contributors. All original codebase design, baseline architecture, and baseline assets are credited to the original authors. This repository has been hardened, refactored, and extended with vulnerability remediations and OAuth 2.0 / OpenID Connect authentication as part of our Secure Software Development (SSD) coursework.
+
+### 3. VIDEO DEMONSTRATION
+- **YouTube Link**: [https://youtu.be/...]
+
 
 ## 🚀 Table of Contents
 
 - [Overview](#-overview)
 - [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [System Roles](#-system-roles)
+- [Tech Stack & Security](#-tech-stack--security)
+- [System Roles & RBAC](#-system-roles--rbac)
 - [Project Structure](#-project-structure)
-- [Setup Instructions](#-setup-instructions)
-- [Team Contributions](#-team-contributions)
-- [License](#-license)
-- [Acknowledgments](#-acknowledgments)
+- [Setup & Running Instructions](#-setup--running-instructions)
+- [System Modules & Scope](#-system-modules--scope)
 
 ---
 
@@ -25,182 +39,203 @@ A full-stack logistics and warehouse management web application designed for eff
 
 **GrocerEase Lanka** is a comprehensive logistics management platform tailored for grocery distribution companies. It provides end-to-end functionalities including staff management, warehouse monitoring, delivery tracking, supplier handling, vehicle fleet management, and real-time analytics.
 
-The system was developed as a group project in the second semester of our second year at **SLIIT**, as part of the **IT2080 – IT Project** course.
+The system has been hardened following **Secure Software Development (SSD)** standards, incorporating vulnerability mitigations across authentication, authorization, input validation, and data protection, along with **OAuth 2.0 / OpenID Connect (Google Identity)** integration.
 
 ---
 
 ## ✨ Key Features
 
-### 1. 🏭 Warehouse Management
-- Add, update, and delete warehouses
-- Real-time capacity monitoring
-- Maintenance scheduling and tracking
-- Assign/revoke warehouse manager roles
-- Maintenance staff notification system
+### 1. 🔐 Authentication & OAuth 2.0 / OpenID Connect
+- Dual authentication mode: Local credentials & Google OpenID Connect (SSO)
+- Secure session handling via `HttpOnly`, `SameSite=Strict`, and `Secure` JWT cookies
+- Cryptographic ID token verification server-side using Google's public JWKS certificates
+- Comprehensive security audit logging for all authentication attempts
 
-### 2. 📦 Inventory Management
-- CRUD operations for inventory items
-- Real-time stock tracking
+### 2. 🏭 Warehouse Management
+- Add, update, and delete warehouses
+- Real-time capacity monitoring and zone allocation
+- Maintenance scheduling and routing tracking
+- Assign/revoke warehouse manager roles
+
+### 3. 📦 Inventory Management
+- CRUD operations for inventory items with strict RBAC
+- Real-time stock tracking and stockout operations
 - Reorder threshold alerts and low-stock notifications
 - Categorization by type, supplier, and location
-- Inventory reporting (daily, weekly, monthly)
 
-### 3. 🚚 Vehicle Fleet & Delivery Management
-- Vehicle and driver registration
-- Delivery scheduling with route optimization
+### 4. 🚚 Vehicle Fleet & Delivery Management
+- Vehicle and driver registration with profile management
+- Delivery scheduling with route management
 - Driver dashboards with assigned delivery tasks
-- Status updates: In Transit, Delivered, Failed, etc.
-- Monthly fuel and maintenance reporting
+- Maintenance records and status tracking
 
-### 4. 👥 Staff Management
-- Add, update, and delete staff members
-- Attendance tracking and leave requests
-- Role-based access control for various personas
-- Monthly salary calculation and deposit notifications
-- Login/dashboard access for staff and managers
+### 5. 👥 Staff Management
+- Staff member lifecycle management (Add, Update, Manage)
+- Attendance tracking with QR Code generation/scanning
+- Leave request workflow and salary management
+- Fine-grained Role-Based Access Control (RBAC)
 
-### 5. 🧾 Supplier & Return/Damage Management
-- Supplier CRUD and management
-- Logging of returned/damaged items with document upload
-- Notifications to and from suppliers
-- Reporting on return/damage incidents and analytics
+### 6. 🧾 Supplier & Return/Damage Handling
+- Supplier profile and contract management
+- Return and damage report handling with photo uploads
+- Formal return dispatch reports and analytics
 
 ---
 
-## 🛠 Tech Stack
+## 🛠 Tech Stack & Security
 
-- **Frontend**: React.js (JavaScript)
-- **Backend**: Node.js, Express.js (TypeScript)
-- **Database**: MongoDB (NoSQL)
-- **Authentication**: JWT, Role-Based Access Control
-- **File Uploads**: Cloudinary
-- **Project Management**: Trello (Kanban board), Agile Sprints
+- **Frontend**: React 19, Vite, Tailwind CSS, React Router v7, `@react-oauth/google`
+- **Backend**: Node.js, Express.js (TypeScript), `google-auth-library`
+- **Database**: MongoDB & Mongoose
+- **Security Middleware**: Helmet (CSP, framing protection), Express Rate Limit (DDoS/brute-force defense), Cookie-Parser
+- **Authentication**: JSON Web Tokens (JWT), BCrypt password hashing, Google OpenID Connect
+- **Cloud Storage**: Cloudinary (Secure document & photo attachments)
 
 ---
 
-## 👥 System Roles
+## 👥 System Roles & RBAC
 
-- **Business Owner**: Full control, system analytics, cost insights
-- **Warehouse Manager**: Staff, warehouse, delivery, and supplier operations
-- **Inventory Manager**: Manages inventory items and stock levels
-- **Driver**: Receives and updates delivery tasks
-- **Staff Member**: Handles assigned tasks, attendance, salaries
-- **Maintenance Staff**: Responds to scheduled maintenance requests
+| Role | Access Scope & Permissions |
+| :--- | :--- |
+| **Business Owner** | Full administrative control, system analytics, financial & operational reporting |
+| **Warehouse Manager** | Warehouse operations, inventory controls, delivery dispatch, and supplier management |
+| **Inventory Manager** | Inventory item management, stockouts, damage/return reporting |
+| **Driver** | Assigned delivery tasks, route profiles, delivery status updates |
+| **Maintenance Staff** | Vehicle and warehouse maintenance requests and updates |
+| **Other Staff** | Staff self-service portal (attendance, QR code, leave requests, profile) |
 
 ---
 
 ## 📁 Project Structure
 
 ```bash
-LOGISTICS-MANAGEMENT-SYSTEM/
+SSD-LOGISTICS-MANAGEMENT-SYSTEM/
 │
-├── backend/                 # Backend - Node.js + TypeScript
-│   ├── .env
+├── backend/                             # Backend API (Node.js + Express + TypeScript)
+│   ├── .env                             # Environment variables
+│   ├── .env.example                     # Environment template
+│   ├── package.json
+│   ├── tsconfig.json
 │   └── src/
-│       ├── API/
-│       ├── Application/
-│       ├── Infrastructure/
-│       ├── middlewares/
-│       ├── types/
-│       ├── util/
-│       └── index.ts
+│       ├── API/                         # Route handlers & controllers
+│       │   ├── DeliveryScheduling/
+│       │   ├── Maintenance/
+│       │   ├── Return and DamageHandling/
+│       │   ├── RoutingMaintenance/
+│       │   ├── SpplierManagement/
+│       │   ├── StaffManagement/
+│       │   ├── VehicleFleet/
+│       │   ├── WarehouseManagement/
+│       │   └── login/
+│       ├── Application/                 # Business logic & domain services
+│       ├── Infrastructure/              # Database models, schemas & connection
+│       │   └── schemas/
+│       ├── middleware/                  # Auth, RBAC & security middleware
+│       ├── types/                       # TypeScript declarations
+│       ├── utils/                       # JWT, helper utilities & tokens
+│       ├── seed.ts                      # Database auto-seeding
+│       └── index.ts                     # Express application entry point
 │
-├── frontend/                # Frontend - React
-│   ├── public/
+├── frontend/                            # Frontend SPA (React 19 + Vite)
+│   ├── .env                             # Frontend environment variables
+│   ├── .env.example                     # Frontend environment template
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
 │   └── src/
-│       ├── assets/
-│       ├── components/
-│       ├── pages/
-│       ├── layouts/
-│       └── main.js
+│       ├── assets/                      # Static assets & images
+│       ├── component/                   # Reusable UI components & layouts
+│       ├── layouts/                     # Root and Staff layout wrappers
+│       ├── pages/                       # Feature page modules
+│       │   ├── DeliveryScheduling/
+│       │   ├── Help/
+│       │   ├── Home/
+│       │   ├── InventoryManagement/
+│       │   ├── Return and DamageHandling/
+│       │   ├── StaffManagement/
+│       │   ├── StaffMember/
+│       │   ├── SupplierManagement/
+│       │   ├── VehicleFleet/
+│       │   ├── WarehouseManagement/
+│       │   └── login/
+│       ├── utils/                       # API client (Axios) & helpers
+│       ├── App.jsx
+│       ├── index.css
+│       └── main.jsx                     # Application root & Router configuration
 │
-├── README.md
+├── README.md                            # Project documentation
 └── package.json
-````
+```
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Setup & Running Instructions
 
 ### Prerequisites
 
-* Node.js and npm
-* MongoDB (local or MongoDB Atlas)
-* Cloudinary account (for image/file uploads)
+* **Node.js** (v18.x or higher) and **npm**
+* **MongoDB** (Local instance or MongoDB Atlas cluster)
+* **Google Cloud Console Account** (OAuth 2.0 Client ID for Google Sign-In)
 
-### Installation
+---
 
-1. **Clone the repository**
+### 1. Environment Configuration
 
-```bash
-git clone https://github.com/your-org/logistics-management-system.git
-cd LOGISTICS-MANAGEMENT-SYSTEM
-```
-
-2. **Set up environment variables**
-
-Create `.env` files in both `frontend/` and `backend/` directories:
-
+#### Backend Configuration
+Create `backend/.env`:
 ```env
-# MongoDB
+PORT=8000
 MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_strong_jwt_secret
+JWT_EXPIRES_IN=1d
+JWT_TTL_MS=86400000
 
-# JWT
-JWT_SECRET=your_jwt_secret
-
-# Cloudinary
-CLOUDINARY_API_KEY=your_cloudinary_key
-CLOUDINARY_API_SECRET=your_cloudinary_secret
+# Cloudinary (Optional / Uploads)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# OAuth 2.0 / OpenID Connect
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 ```
 
-3. **Install dependencies**
+#### Frontend Configuration
+Create `frontend/.env`:
+```env
+VITE_API_BASE_URL=http://localhost:8000
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+```
 
+---
+
+### 2. Installation & Running
+
+#### Start the Backend Server:
 ```bash
-# Frontend
+cd backend
+npm install
+npm run dev
+```
+*Backend runs on `http://localhost:8000`.*
+
+#### Start the Frontend Client:
+```bash
 cd frontend
 npm install
-
-# Backend
-cd ../backend
-npm install
-```
-
-4. **Run the application**
-
-```bash
-# Backend
 npm run dev
-
-# Frontend
-cd ../frontend
-npm start
 ```
+*Frontend runs on `http://localhost:5173`.*
 
 ---
 
-## 👨‍💻 System Modules & Features
+## 👨‍💻 System Modules & Scope
 
 | Module | Features & Scope |
-| ------------------------- | --------------------------------- |
-| **Staff Management & Auth** | Staff registration, role management, authentication & salary handling |
-| **Fleet & Delivery Management** | Vehicle tracking, delivery scheduling & maintenance |
-| **Warehouse Management** | Warehouse capacity, maintenance tracking & manager assignments |
-| **Inventory Management** | Item CRUD, reorder alerts & stock tracking |
-| **Supplier & Return Handling** | Supplier records, return reports & damage handling |
-
-
----
-
-## 📄 License
-
-This project is intended for **academic use only** as part of SLIIT coursework.
-All rights reserved © 2025 by the original authors.
-
----
-
-## ⭐ Acknowledgments
-
-* **SLIIT** – BSc (Hons) in Information Technology – Year 2, Semester II
-* Lecturers, mentors, and project advisors
-* The open-source community for libraries and inspiration
+| :--- | :--- |
+| **Authentication & OIDC** | Passwordless Google SSO, credential login, HttpOnly sessions, Audit logging |
+| **Staff Management & Self-Service** | Staff CRUD, attendance tracking via QR codes, leave workflows, salary calculation |
+| **Fleet & Delivery Management** | Vehicle profiles, driver assignments, route dispatching, vehicle maintenance |
+| **Warehouse Management** | Warehouse capacity, temperature zones, manager assignments, maintenance tracking |
+| **Inventory Management** | Stock tracking, threshold alerts, stockout verification, categorization |
+| **Supplier & Damage Handling** | Supplier directory, damage reports with attachments, formal return dispatches |

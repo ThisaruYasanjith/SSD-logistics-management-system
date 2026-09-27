@@ -86,7 +86,8 @@ function FormStep1({ formData, setFormData, onNext, errors, setErrors }) {
       setErrors({});
 
       try {
-        const res = await fetch('http://localhost:8000/inventory', {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const res = await fetch(`${API_BASE_URL}/inventory`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -12,37 +12,9 @@ import {
   MenuItem,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function RoutingMaintenanceForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -67,7 +39,7 @@ export default function RoutingMaintenanceForm() {
         console.log("Fetched warehouses:", response.data);
         setWarehouses(response.data);
       } catch (error) {
-        setError(error.response?.data?.message || "Failed to load warehouses.");
+        setError(errorMessage(error, "Failed to load warehouses."));
         toast.error("Failed to load warehouses.");
         console.error("Error fetching warehouses:", error);
       } finally {
@@ -126,7 +98,7 @@ export default function RoutingMaintenanceForm() {
       toast.success("Routing Maintenance Created Successfully!");
       navigate("/warehouse/Maintainance");
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to create routing maintenance.");
+      setError(errorMessage(error, "Failed to create routing maintenance."));
       toast.error("Failed to create routing maintenance. Please try again.");
       console.error("Error creating Routing Maintenance:", error);
     } finally {

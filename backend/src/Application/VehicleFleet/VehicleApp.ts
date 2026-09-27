@@ -1,34 +1,54 @@
 // Application/userService.ts
 import User from "../../Infrastructure/schemas/VehiclefleetSchemas/VehiclesSchema"; // Import User schema
+import Vehicle from "../../Infrastructure/schemas/VehiclefleetSchemas/VehiclesSchema";
+import staffMembers from "../../Infrastructure/schemas/staff";
 
-import Vehicle from "../../Infrastructure/schemas/VehiclefleetSchemas/VehiclesSchema"
-import staffMembers from '../../Infrastructure/schemas/staff'; 
+/**
+ * Fields a client may change. `VehicleNumber` is deliberately excluded: it is
+ * the primary key and permitting it would let a caller take over the identity
+ * of an existing vehicle.
+ */
+export const VEHICLE_UPDATABLE_FIELDS = [
+  "OwnersNIC",
+  "OwnersName",
+  "ContactNumber",
+  "Address",
+  "Email",
+  "VehicleType",
+  "FuelType",
+  "VehicleBrand",
+  "LoadCapacity",
+  "DriverID",
+] as const;
 
-// Get user by name
-export const getUserByName = async (name: string) => {
+export type VehicleUpdates = Partial<Record<(typeof VEHICLE_UPDATABLE_FIELDS)[number], unknown>>;
 
-  return await User.findOne({ name });
+/** Columns safe to return from the list endpoint (no owner PII). */
+export const VEHICLE_LIST_FIELDS =
+  "VehicleNumber VehicleType VehicleBrand OwnersName DriverID LoadCapacity deletedAt";
+
+const pickUpdatableFields = (updateData: Record<string, unknown>): VehicleUpdates => {
+  const sanitized: Record<string, unknown> = {};
+  for (const field of VEHICLE_UPDATABLE_FIELDS) {
+    if (updateData[field] !== undefined) {
+      sanitized[field] = updateData[field];
+    }
+  }
+  return sanitized as VehicleUpdates;
 };
 
 // Get user by email
 export const getUserByEmail = async (email: string) => {
-    
   return await User.findOne({ email });
 };
 
-
 // Function to create a new user
 export const createUser = async (name: string, email: string, password: string) => {
-
   const newUser = new User({ name, email, password });
-  return newUser.save();  // Save the user and return the result
-
+  return newUser.save();
 };
 
-
-
 export const createVehicle = async (
-
   OwnersNIC: string,
   OwnersName: string,
   ContactNumber: string,
@@ -40,11 +60,8 @@ export const createVehicle = async (
   VehicleBrand: string,
   LoadCapacity: number,
   DriverID: string
-
 ) => {
   try {
-
-    // Create a new vehicle instance with the provided data
     const newVehicle = new Vehicle({
       OwnersNIC,
       OwnersName,
@@ -59,121 +76,119 @@ export const createVehicle = async (
       DriverID,
     });
 
-    // Save the new vehicle to the database and return the result
-    const savedVehicle = await newVehicle.save();
-    return savedVehicle;
-
+    return await newVehicle.save();
   } catch (error) {
-
+    if ((error as { code?: number }).code === 11000) {
+      throw new Error("A vehicle with this registration number or owner email already exists");
+    }
     console.error("Error creating vehicle:", error);
     throw new Error("Error creating vehicle");
-
   }
 };
 
-
-
+/**
+ * List endpoint. Deliberately projects away owner PII (NIC, phone, address,
+ * email) — callers that legitimately need those must use the detail endpoint,
+ * which is role-gated.
+ */
 export const getVehicles = async () => {
-
   try {
-
-    const vehicles = await Vehicle.find(); // fetch all vehicles from the collection
-    return vehicles;
-
+    return await Vehicle.find({
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    }).lean();
   } catch (error) {
     console.error("Error retrieving vehicles:", error);
     throw new Error("Error retrieving vehicles");
   }
 };
 
-
-
 // Get vehicle by registered number
-
 export const getVehicleByID = async (VehicleNumber: string) => {
-
   try {
-
-      const vehicle = await Vehicle.findOne({ VehicleNumber })
-      .populate('Maintenance')  // Populating the maintenance records
+    const vehicle = await Vehicle.findOne({ VehicleNumber })
+      .populate("Maintenance")
       .exec();
 
     if (!vehicle) {
-
-      //vehicle is not found
-      throw new Error('Vehicle not found');
-
+      throw new Error("Vehicle not found");
     }
 
     return vehicle;
-
-
   } catch (error) {
-
-    console.error('Error fetching vehicle:', error);
-    throw error; 
-
+    if ((error as Error).message === "Vehicle not found") throw error;
+    console.error("Error fetching vehicle:", error);
+    throw new Error("Error fetching vehicle");
   }
 };
 
-
-//update vehicle details
-export const updateVehicleByID = async (vehicleId: string, updateData: object) => {
+// update vehicle details
+export const updateVehicleByID = async (vehicleId: string, updateData: Record<string, unknown>) => {
   try {
     const updateResult = await Vehicle.updateOne(
       { VehicleNumber: vehicleId },
-      { $set: updateData } // update the fields
+      { $set: updateData }
     );
 
-    
-    if (updateResult.modifiedCount === 0) {
-      // No document was updated
-      throw new Error('Vehicle not found or no changes made');
+    if (updateResult.matchedCount === 0) {
+      throw new Error("Vehicle not found");
     }
 
-    return { message: 'Vehicle updated successfully' };
+    return { message: "Vehicle updated successfully" };
   } catch (error) {
-    console.error('Error updating vehicle:', error);
-    throw error; 
+    if ((error as Error).message === "Vehicle not found") throw error;
+    console.error("Error updating vehicle:", error);
+    throw new Error("Error updating vehicle");
   }
 };
 
-
-
-// delete vehicle by ID
-export const deleteVehicleByID = async (vehicleId: string) => {
-
+/** Delete vehicle record */
+export const deleteVehicleByID = async (vehicleId: string, deletedBy?: string) => {
   try {
     const deleteResult = await Vehicle.deleteOne({ VehicleNumber: vehicleId });
 
     if (deleteResult.deletedCount === 0) {
-      throw new Error('Vehicle not found or already deleted');
+      throw new Error("Vehicle not found or already deleted");
     }
 
-    return { message: 'Vehicle deleted successfully' };
+    return { message: "Vehicle deleted successfully" };
   } catch (error) {
-    console.error('Error deleting vehicle:', error);
-    throw error;
+    if ((error as Error).message === "Vehicle not found or already deleted") throw error;
+    console.error("Error deleting vehicle:", error);
+    throw new Error("Error deleting vehicle");
   }
 };
 
-
-//Get the Driver details
-export const getBriefStaffDetails = async () => {
-
+export const restoreVehicleByID = async (vehicleId: string) => {
   try {
+    const restoreResult = await Vehicle.updateOne(
+      { VehicleNumber: vehicleId, deletedAt: { $ne: null } },
+      { $set: { deletedAt: null, deletedBy: null } }
+    );
 
-    const staffDetails = await staffMembers.find({ role: 'Driver' }).select('fullName email phoneNo role');
-    console.log("Brief Staff Details Fetched:", staffDetails);
-    return staffDetails;
+    if (restoreResult.matchedCount === 0) {
+      throw new Error("Vehicle not found");
+    }
 
-  } catch (error: unknown) {
+    return { message: "Vehicle restored successfully" };
+  } catch (error) {
+    if ((error as Error).message === "Vehicle not found") throw error;
+    console.error("Error restoring vehicle:", error);
+    throw new Error("Error restoring vehicle");
+  }
+};
 
+/**
+ * Drivers for the assignment dropdown. Only the fields the picker needs are
+ * returned — no DOB, address, NIC or status.
+ */
+export const getBriefStaffDetails = async () => {
+  try {
+    return await staffMembers
+      .find({ role: "Driver", status: "Active" })
+      .select("fullName email phoneNo role")
+      .lean();
+  } catch (error) {
     console.error("Error fetching brief staff details:", error);
     throw new Error("Error fetching staff details");
   }
 };
-
-
-
-

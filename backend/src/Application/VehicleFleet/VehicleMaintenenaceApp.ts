@@ -1,38 +1,34 @@
+import crypto from "crypto";
+import Maintenance from "../../Infrastructure/schemas/VehiclefleetSchemas/MaintenenceSchema";
+import Vehicle from "../../Infrastructure/schemas/VehiclefleetSchemas/VehiclesSchema";
 
-import Maintenance from '../../Infrastructure/schemas/VehiclefleetSchemas/MaintenenceSchema';
-import Vehicle from '../../Infrastructure/schemas/VehiclefleetSchemas/VehiclesSchema';
+const generateMaintenanceId = (): string =>
+  `M-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
 
 // Function to create a new maintenance record
 export const createMaintenance = async (
-
   VehicleNumber: string,
   MaintenanceDate: Date,
   Type: string,
   Cost: number,
   Description: string
 ) => {
-
   try {
-    // Generate a new MaintenanceID
-    const newMaintenanceID = `M-${Date.now()}`;
-
     const newMaintenance = new Maintenance({
       VehicleNumber,
-      MaintenanceID :newMaintenanceID,
+      MaintenanceID: generateMaintenanceId(),
       MaintenanceDate,
       Type,
       Cost,
       Description,
     });
 
-    // Save the new maintenance record to the database
     const savedMaintenance = await newMaintenance.save();
 
-    // Link the maintenance to the vehicle
-    await Vehicle.findOneAndUpdate(
+    await Vehicle.updateOne(
       { VehicleNumber },
       { $push: { Maintenance: savedMaintenance._id } }
-    );
+    ).catch(() => {});
 
     return savedMaintenance;
   } catch (error) {
@@ -40,15 +36,16 @@ export const createMaintenance = async (
     throw new Error("Error creating maintenance record");
   }
 };
- 
+
 // Function to get a maintenance record by ID
 export const getMaintenanceById = async (maintenanceId: string) => {
   try {
-    const maintenanceRecord = await Maintenance.findOne({ MaintenanceID: maintenanceId });
-    return maintenanceRecord;
-  } catch (error: any) {
-    console.error('Error fetching maintenance record:', error);
-    throw new Error('Error fetching maintenance record');
+    return await Maintenance.findOne({
+      $or: [{ MaintenanceID: maintenanceId }, { _id: maintenanceId.match(/^[0-9a-fA-F]{24}$/) ? maintenanceId : null }],
+    });
+  } catch (error) {
+    console.error("Error fetching maintenance record:", error);
+    throw new Error("Error fetching maintenance record");
   }
 };
 
@@ -61,62 +58,54 @@ export const updateMaintenance = async (
   Description?: string
 ) => {
   try {
+    const changes: Record<string, unknown> = {};
+    if (MaintenanceDate !== undefined) changes.MaintenanceDate = MaintenanceDate;
+    if (Type !== undefined) changes.Type = Type;
+    if (Cost !== undefined) changes.Cost = Cost;
+    if (Description !== undefined) changes.Description = Description;
+
     const updatedMaintenance = await Maintenance.findOneAndUpdate(
-      { MaintenanceID: maintenanceId },
       {
-        $set: {
-          MaintenanceDate,
-          Type,
-          Cost,
-          Description,
-        },
+        $or: [{ MaintenanceID: maintenanceId }, { _id: maintenanceId.match(/^[0-9a-fA-F]{24}$/) ? maintenanceId : null }],
       },
+      { $set: changes },
       { new: true }
     );
 
-    if (!updatedMaintenance) {
-      // Handle the case where no maintenance record was found with the given ID
-      console.log(`Maintenance record with ID ${maintenanceId} not found for update.`);
-      return null; // Or throw a specific error
-    }
-
     return updatedMaintenance;
-  } catch (error: any) {
-    console.error('Error updating maintenance record:', error);
-    throw new Error('Error updating maintenance record');
+  } catch (error) {
+    console.error("Error updating maintenance record:", error);
+    throw new Error("Error updating maintenance record");
   }
 };
-
-
 
 // Function to delete a maintenance record by MaintenanceID
 export const deleteMaintenance = async (maintenanceId: string) => {
   try {
-    const deletedMaintenance = await Maintenance.findOneAndDelete({ MaintenanceID: maintenanceId });
+    const deletedMaintenance = await Maintenance.findOneAndDelete({
+      $or: [{ MaintenanceID: maintenanceId }, { _id: maintenanceId.match(/^[0-9a-fA-F]{24}$/) ? maintenanceId : null }],
+    });
 
     if (deletedMaintenance) {
-      // Remove the reference from the associated Vehicle document
-      await Vehicle.findOneAndUpdate(
-        { Maintenance: deletedMaintenance._id }, // Use the MongoDB _id of the deleted record
+      await Vehicle.updateMany(
+        { Maintenance: deletedMaintenance._id },
         { $pull: { Maintenance: deletedMaintenance._id } }
-      );
+      ).catch(() => {});
     }
 
     return deletedMaintenance;
-  } catch (error: any) {
-    console.error('Error deleting maintenance record:', error);
-    throw new Error('Error deleting maintenance record');
+  } catch (error) {
+    console.error("Error deleting maintenance record:", error);
+    throw new Error("Error deleting maintenance record");
   }
 };
 
- // New function to get all maintenance details
- export const getAllMaintenance = async () => {
-   try {
-    const allMaintenanceRecords = await Maintenance.find();
-    return allMaintenanceRecords;
-   } catch (error: any) {
-    console.error('Error fetching all maintenance records:', error);
-    throw new Error('Error fetching all maintenance records');
-   }
-  };
-
+// New function to get all maintenance details
+export const getAllMaintenance = async () => {
+  try {
+    return await Maintenance.find().lean();
+  } catch (error) {
+    console.error("Error fetching all maintenance records:", error);
+    throw new Error("Error fetching all maintenance records");
+  }
+};

@@ -16,9 +16,13 @@
     "@prisma/client": "6.6.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.1.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "jsqr": "^1.4.0",
     "mongodb": "^6.15.0",
@@ -32,10 +36,12 @@
     "qrcode": "^1.5.4",
     "shortid": "^2.2.17",
     "twilio": "^5.5.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^4.17.21",

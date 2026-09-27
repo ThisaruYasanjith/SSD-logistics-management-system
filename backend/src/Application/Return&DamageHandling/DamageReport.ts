@@ -17,13 +17,70 @@ interface DamageReportInput {
     brandName: string;
 }
 
+// Server-side validation helpers
+const VALID_DAMAGE_TYPES = ['Physical', 'Water', 'Chemical', 'Temperature', 'Production'];
+const VALID_ACTIONS = ['Return', 'Dispose'];
+
+const validateDamageReportInput = (data: any, isUpdate = false): string | null => {
+    const { itemName, quantity, damageType, actionRequired, description, date, reportedBy, productName, brandName } = data;
+
+    if (!isUpdate) {
+        // Required field presence checks for create
+        if (!itemName || !quantity || !damageType || !actionRequired || !description || !date || !reportedBy || !productName || !brandName) {
+            return 'All required fields must be provided';
+        }
+    }
+
+    // Validate quantity if provided
+    if (quantity !== undefined) {
+        const qty = Number(quantity);
+        if (!Number.isInteger(qty) || qty <= 0) {
+            return 'Quantity must be a positive integer';
+        }
+    }
+
+    // Validate damageType if provided
+    if (damageType !== undefined && !VALID_DAMAGE_TYPES.includes(damageType)) {
+        return `Invalid damage type. Must be one of: ${VALID_DAMAGE_TYPES.join(', ')}`;
+    }
+
+    // Validate actionRequired if provided
+    if (actionRequired !== undefined && !VALID_ACTIONS.includes(actionRequired)) {
+        return `Invalid action. Must be one of: ${VALID_ACTIONS.join(', ')}`;
+    }
+
+    // Validate date format if provided
+    if (date !== undefined) {
+        if (typeof date !== 'string' || isNaN(Date.parse(date))) {
+            return 'Invalid date format';
+        }
+    }
+
+    // Validate string fields are not excessively long
+    if (description !== undefined && (typeof description !== 'string' || description.trim().length === 0 || description.length > 1000)) {
+        return 'Description must be a non-empty string (max 1000 characters)';
+    }
+
+    if (reportedBy !== undefined && (typeof reportedBy !== 'string' || reportedBy.trim().length === 0 || reportedBy.length > 100)) {
+        return 'Reported By must be a non-empty string (max 100 characters)';
+    }
+
+    if (itemName !== undefined && (typeof itemName !== 'string' || itemName.trim().length === 0 || itemName.length > 200)) {
+        return 'Item Name must be a non-empty string (max 200 characters)';
+    }
+
+    return null;
+};
+
 // Create a damage report
 export const createDamageReport = async (req: Request<{}, {}, DamageReportInput>, res: Response): Promise<void> => {
     try {
         const { itemName, quantity, damageType, actionRequired, supplierName, description, date, reportedBy, productName, brandName } = req.body;
 
-        if (!itemName || !quantity || !damageType || !actionRequired || !description || !date || !reportedBy || !productName || !brandName) {
-            res.status(400).json({ message: 'All required fields must be provided' });
+        // Server-side validation
+        const validationError = validateDamageReportInput(req.body, false);
+        if (validationError) {
+            res.status(400).json({ message: validationError });
             return;
         }
 
@@ -38,14 +95,14 @@ export const createDamageReport = async (req: Request<{}, {}, DamageReportInput>
         }
 
         const newDamageReport = await DamageReport.create({
-            itemName,
-            quantity,
+            itemName: itemName.trim(),
+            quantity: Number(quantity),
             damageType,
             actionRequired,
-            supplierName,
-            description,
+            supplierName: supplierName ? supplierName.trim() : undefined,
+            description: description.trim(),
             date,
-            reportedBy,
+            reportedBy: reportedBy.trim(),
         });
 
         inventoryItem.quantity -= quantity;
@@ -54,11 +111,7 @@ export const createDamageReport = async (req: Request<{}, {}, DamageReportInput>
         res.status(201).json({ message: 'Damage report created successfully', data: newDamageReport });
     } catch (error: unknown) {
         console.error('Error in createDamageReport:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ message: 'Internal server error', error: error.message });
-        } else {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -81,11 +134,7 @@ export const getAllDamageReports = async (req: Request, res: Response): Promise<
         res.status(200).json(enrichedReports);
     } catch (error: unknown) {
         console.error('Error in getAllDamageReports:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ message: 'Internal server error', error: error.message });
-        } else {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -100,6 +149,13 @@ export const updateDamageReport = async (req: Request, res: Response): Promise<v
             return;
         }
 
+        // Server-side validation for update
+        const validationError = validateDamageReportInput(req.body, true);
+        if (validationError) {
+            res.status(400).json({ message: validationError });
+            return;
+        }
+
         const damageReport = await DamageReport.findById(id);
         if (!damageReport) {
             res.status(404).json({ message: 'Damage report not found' });
@@ -107,7 +163,7 @@ export const updateDamageReport = async (req: Request, res: Response): Promise<v
         }
 
         // Validate inventory if quantity changes
-        if (quantity !== damageReport.quantity) {
+        if (quantity !== undefined && quantity !== damageReport.quantity) {
             const inventoryItem = await Inventory.findOne({ productName, brandName });
             if (!inventoryItem) {
                 res.status(404).json({ message: 'Item not found in inventory' });
@@ -124,30 +180,28 @@ export const updateDamageReport = async (req: Request, res: Response): Promise<v
             await inventoryItem.save();
         }
 
-        // Update the damage report
+        // Build whitelisted update payload
+        const updatePayload: Record<string, any> = {};
+        if (itemName !== undefined) updatePayload.itemName = itemName.trim();
+        if (quantity !== undefined) updatePayload.quantity = Number(quantity);
+        if (damageType !== undefined) updatePayload.damageType = damageType;
+        if (actionRequired !== undefined) updatePayload.actionRequired = actionRequired;
+        if (supplierName !== undefined) updatePayload.supplierName = supplierName.trim();
+        if (description !== undefined) updatePayload.description = description.trim();
+        if (date !== undefined) updatePayload.date = date;
+        if (reportedBy !== undefined) updatePayload.reportedBy = reportedBy.trim();
+
+        // Update the damage report using $set to prevent mass assignment
         const updatedDamageReport = await DamageReport.findByIdAndUpdate(
             id,
-            {
-                itemName,
-                quantity,
-                damageType,
-                actionRequired,
-                supplierName,
-                description,
-                date,
-                reportedBy,
-            },
-            { new: true }
+            { $set: updatePayload },
+            { new: true, runValidators: true }
         );
 
         res.status(200).json({ message: 'Damage report updated successfully', data: updatedDamageReport });
     } catch (error: unknown) {
         console.error('Error in updateDamageReport:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ message: 'Internal server error', error: error.message });
-        } else {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -180,11 +234,7 @@ export const deleteDamageReport = async (req: Request, res: Response): Promise<v
         res.status(200).json({ message: 'Damage report deleted successfully' });
     } catch (error: unknown) {
         console.error('Error in deleteDamageReport:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ message: 'Internal server error', error: error.message });
-        } else {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -195,6 +245,12 @@ export const sendReturnReport = async (req: Request, res: Response): Promise<voi
 
         if (!damageReportId || !additionalDetails) {
             res.status(400).json({ message: 'Damage report ID and additional details are required' });
+            return;
+        }
+
+        // Validate additionalDetails length
+        if (typeof additionalDetails !== 'string' || additionalDetails.length > 2000) {
+            res.status(400).json({ message: 'Additional details must be a string (max 2000 characters)' });
             return;
         }
 
@@ -222,11 +278,7 @@ export const sendReturnReport = async (req: Request, res: Response): Promise<voi
         res.status(200).json({ message: 'Return report email sent successfully' });
     } catch (error: unknown) {
         console.error('Error in sendReturnReport:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ message: 'Internal server error', error: error.message });
-        } else {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -242,10 +294,6 @@ export const getInventoryItems = async (req: Request, res: Response): Promise<vo
         res.status(200).json(validItems);
     } catch (error: unknown) {
         console.error('Error fetching inventory items:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ message: 'Internal server error', error: error.message });
-        } else {
-            res.status(500).json({ message: 'Internal server error' });
-        }
+        res.status(500).json({ message: 'Internal server error' });
     }
 };

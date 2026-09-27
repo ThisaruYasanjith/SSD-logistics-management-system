@@ -12,37 +12,9 @@ import {
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { styled } from "@mui/material/styles";
-import axios from "axios";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api", // Adjust to 3001 if backend uses that port
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 const StyledTextField = styled(TextField)(() => ({
   marginBottom: "1rem",
 }));
@@ -163,7 +135,7 @@ const UpdateVehicleMaintenanceForm = () => {
       toast.success("Maintenance details updated successfully!");
       navigate(`/vehicle/VehicleProfile/${vehicleNumber}`);
     } catch (error) {
-      setError(error.response?.data?.message || "Error updating maintenance details.");
+      setError(errorMessage(error, "Error updating maintenance details."));
       toast.error("Error updating maintenance details.");
       console.error("Error updating maintenance details:", error);
     } finally {
@@ -181,7 +153,7 @@ const UpdateVehicleMaintenanceForm = () => {
         toast.success("Maintenance record deleted successfully!");
         navigate(`/vehicle/VehicleProfile/${vehicleNumber}`);
       } catch (error) {
-        setError(error.response?.data?.message || "Error deleting maintenance record.");
+        setError(errorMessage(error, "Error deleting maintenance record."));
         toast.error("Error deleting maintenance record.");
         console.error("Error deleting maintenance record:", error);
       } finally {

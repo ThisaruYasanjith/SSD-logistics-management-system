@@ -1,35 +1,7 @@
-import axios from "axios";
 import { jsPDF } from "jspdf";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 const reportgenarate = async () => {
   try {
     // Fetch both maintenance and routing maintenance data
@@ -148,6 +120,7 @@ const reportgenarate = async () => {
       // Routing Maintenance Table Headers
       const routingHeaders = ["RID", "Warehouse", "Date", "Water Bill", "Current Bill", "Description"];
       const routingColWidths = [40, 40, 30, 25, 25, 50];
+      const startX = 10;
 
       // Draw header background
       pdf.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
@@ -162,7 +135,7 @@ const reportgenarate = async () => {
       // Add headers
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(255, 255, 255);
-      currentX = startX;
+      let currentX = startX;
       routingHeaders.forEach((header, index) => {
         pdf.text(header, currentX + 2, y);
         currentX += routingColWidths[index];
@@ -204,7 +177,7 @@ const reportgenarate = async () => {
     const message =
       error.response?.status === 401 || error.response?.status === 403
         ? "Authentication failed. Please log in again."
-        : error.response?.data?.message || "Failed to generate report.";
+        : errorMessage(error, "Failed to generate report.");
     console.error("Error generating report:", error);
     toast.error(message);
     throw new Error(message);

@@ -1,11 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt";
 
-
-//this middleware ging to check
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+const extractToken = (req: Request): string | undefined => {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; //who beare the token
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.split(" ")[1];
+  }
+  const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
+  return cookies?.access_token;
+};
+
+export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  const token = extractToken(req);
 
   if (!token) {
     return res.status(401).json({ message: "Access token required" });
@@ -13,45 +19,25 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   try {
     const decoded = verifyToken(token);
-    (req as any).user = decoded; //attach user infor to request
+    req.user = { id: decoded.id, role: decoded.role, email: decoded.email, fullName: decoded.fullName };
     next();
   } catch (error) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
 
-//this gonna check the user role
 export const authorizeRole = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
+    const user = req.user;
 
-    if (!user || !roles.includes(user.role)) {
+    if (!user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (!roles.includes(user.role)) {
       return res.status(403).json({ message: "Access denied: Insufficient permissions" });
     }
 
     next();
   };
-
-
-
-
-  const jwt = require("jsonwebtoken");
-
-  const authMiddleware = (req: { headers: { authorization: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; }, next: () => void) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "No token provided or invalid token format" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
-      req.user = decoded; // Attach user info to the request (e.g., user ID)
-      next();
-    } catch (error) {
-      return res.status(403).json({ message: "Invalid or expired token" });
-    }
-  };
-
-  module.exports = authMiddleware;
 };

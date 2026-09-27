@@ -5,6 +5,16 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import staffMembers from "./Infrastructure/schemas/staff";
 
+const BCRYPT_ROUNDS = 12;
+
+/**
+ * Development/demo accounts only.
+ *
+ * SECURITY: these passwords are well-known and must never be enabled in a
+ * production or internet-facing deployment. Rotate or remove them before any
+ * real deployment. `login.ts` only ever accepts them when creating a user for
+ * the first time — it never treats them as a universal fallback.
+ */
 export const DEFAULT_ACCOUNTS = [
   {
     fullName: "Business Owner",
@@ -103,10 +113,16 @@ export const seedDefaultUsers = async () => {
 
     console.log("Seeding default staff users...");
 
+    if (process.env.NODE_ENV === "production") {
+      console.warn(
+        "WARNING: seeding well-known default passwords in production. Rotate them immediately."
+      );
+    }
+
     for (const account of DEFAULT_ACCOUNTS) {
       const existingUser = await staffMembers.findOne({ email: account.email.toLowerCase() });
       if (!existingUser) {
-        const hashedPassword = await bcrypt.hash(account.password, 10);
+        const hashedPassword = await bcrypt.hash(account.password, BCRYPT_ROUNDS);
         await staffMembers.create({
           ...account,
           email: account.email.toLowerCase(),

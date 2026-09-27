@@ -8,7 +8,6 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import axios from "axios";
 import { toast } from "react-toastify";
 import {
   Chart as ChartJS,
@@ -24,34 +23,7 @@ import { Bar } from "react-chartjs-2";
 // Chart.js registration
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api", // Adjust to 3001 if backend uses that port
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 // Styled components
 const StyledTableHead = styled(TableHead)(() => ({
   backgroundColor: "#f0f0f0",
@@ -85,7 +57,7 @@ export default function VehicleFleetManagement() {
       })
       .catch((error) => {
         console.error("Error fetching vehicles:", error);
-        setError("Failed to fetch vehicles");
+        setError(errorMessage(error, "Failed to fetch vehicles"));
         toast.error("Failed to fetch vehicles");
       });
 
@@ -96,7 +68,7 @@ export default function VehicleFleetManagement() {
       })
       .catch((error) => {
         console.error("Error fetching maintenance details:", error);
-        setError("Failed to fetch maintenance details");
+        setError(errorMessage(error, "Failed to fetch maintenance details"));
         toast.error("Failed to fetch maintenance details");
       });
   }, []);

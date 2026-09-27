@@ -1,18 +1,27 @@
-
-import express from 'express';
-import { updateVehicleByID, createVehicle, getVehicles, getVehicleByID, deleteVehicleByID, getBriefStaffDetails } from '../../Application/VehicleFleet/VehicleApp'; // Import service methods
-
-
+import express from "express";
+import {
+  updateVehicleByID,
+  createVehicle,
+  getVehicles,
+  getVehicleByID,
+  deleteVehicleByID,
+  restoreVehicleByID,
+  getBriefStaffDetails,
+} from "../../Application/VehicleFleet/VehicleApp";
+import { authenticateToken, authorizeRole } from "../../middleware/authentication";
+import {
+  validateBody,
+  createVehicleSchema,
+  updateVehicleSchema,
+} from "../../middleware/validation";
 
 const router = express.Router();
 
+const READ_ROLES = ["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff", "Driver"];
+const WRITE_ROLES = ["Business Owner", "Warehouse Manager"];
 
-
-
-//create vehicle
-
-router.post('/vehicles', async (req, res) => {
-
+// Create vehicle
+router.post("/vehicles", authenticateToken, authorizeRole(WRITE_ROLES), validateBody(createVehicleSchema), async (req, res) => {
   const {
     OwnersNIC,
     OwnersName,
@@ -24,12 +33,10 @@ router.post('/vehicles', async (req, res) => {
     FuelType,
     VehicleBrand,
     LoadCapacity,
-    DriverID
+    DriverID,
   } = req.body;
 
   try {
-
-    // Call the service function to create and save the new vehicle
     const newVehicle = await createVehicle(
       OwnersNIC,
       OwnersName,
@@ -40,100 +47,114 @@ router.post('/vehicles', async (req, res) => {
       VehicleType,
       FuelType,
       VehicleBrand,
-      LoadCapacity,
+      Number(LoadCapacity) || 0,
       DriverID
     );
 
-    // Return the created vehicle data as JSON
     res.status(201).json(newVehicle);
   } catch (error) {
-    res.status(400).json({ message: 'Error creating vehicle', error });
+    console.error("Error creating vehicle:", error);
+    res.status(400).json({ message: "Error creating vehicle" });
   }
 });
 
-
-
-//get all vehicles
-router.get("/vehicles", async (req, res) => {
-
+// Get all vehicles
+router.get("/vehicles", authenticateToken, authorizeRole(READ_ROLES), async (req, res) => {
   try {
     const vehicles = await getVehicles();
     res.status(200).json(vehicles);
-
   } catch (error) {
-    res.status(500).json({ message: "Error fetching vehicles", error });
+    console.error("Error fetching vehicles:", error);
+    res.status(500).json({ message: "Error fetching vehicles" });
   }
 });
-
-
 
 // Route to get vehicle details by VehicleNumber
-
-router.get('/vehicles/:vehicleId', async (req, res) => {
-
-  const { vehicleId } = req.params; // Extract vehicleId from the route parameter
+router.get("/vehicles/:vehicleId", authenticateToken, authorizeRole(READ_ROLES), async (req, res) => {
+  const { vehicleId } = req.params;
 
   try {
-
     const vehicle = await getVehicleByID(vehicleId);
-    res.json(vehicle); // Send the vehicle data as a response
-
+    if (!vehicle) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+    res.json(vehicle);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching vehicle", error });
+    const message = (error as Error).message;
+    if (message === "Vehicle not found") {
+      return res.status(404).json({ message });
+    }
+    console.error("Error fetching vehicle:", error);
+    res.status(500).json({ message: "Error fetching vehicle" });
   }
 });
 
-
-
 // Route to Update vehicle details
-
-router.put('/vehicles/:vehicleId', async (req, res) => {
-
-  const { vehicleId } = req.params; // Extract vehicleId from the route parameter
-  const updateData = req.body; // Extract the fields to be updated from the request body
+router.put("/vehicles/:vehicleId", authenticateToken, authorizeRole(WRITE_ROLES), validateBody(updateVehicleSchema), async (req, res) => {
+  const { vehicleId } = req.params;
+  const updateData = req.body;
 
   try {
     const result = await updateVehicleByID(vehicleId, updateData);
-    res.json(result); // Send a success message if the update is successful
+    res.json(result);
   } catch (error) {
-    res.status(500).json({ message: "Error updating vehicle", error });
+    const message = (error as Error).message;
+    if (message === "Vehicle not found") {
+      return res.status(404).json({ message });
+    }
+    console.error("Error updating vehicle:", error);
+    res.status(500).json({ message: "Error updating vehicle" });
   }
 });
 
-
-// Delete vehicle by ID
-router.delete('/vehicles/:vehicleId', async (req, res) => {
-  const { vehicleId } = req.params; // Extract vehicleId from the route parameter
+// Soft delete vehicle by ID
+router.delete("/vehicles/:vehicleId", authenticateToken, authorizeRole(WRITE_ROLES), async (req, res) => {
+  const { vehicleId } = req.params;
 
   try {
-    const result = await deleteVehicleByID(vehicleId); // Call your delete function
-    res.json(result); // Send a success message if deleted
+    const result = await deleteVehicleByID(vehicleId, req.user?.id || "user");
+    res.json(result);
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting vehicle', error });
+    const message = (error as Error).message;
+    if (message === "Vehicle not found or already deleted") {
+      return res.status(404).json({ message });
+    }
+    console.error("Error deleting vehicle:", error);
+    res.status(500).json({ message: "Error deleting vehicle" });
   }
 });
 
-// Route to get brief staff details (fullName, email, phoneNo, role)
-router.get('/drivers', async (req, res) => {
+// Restore a soft-deleted vehicle
+router.post("/vehicles/:vehicleId/restore", authenticateToken, authorizeRole(WRITE_ROLES), async (req, res) => {
+  const { vehicleId } = req.params;
+
+  try {
+    const result = await restoreVehicleByID(vehicleId);
+    res.json(result);
+  } catch (error) {
+    const message = (error as Error).message;
+    if (message === "Vehicle not found") {
+      return res.status(404).json({ message });
+    }
+    console.error("Error restoring vehicle:", error);
+    res.status(500).json({ message: "Error restoring vehicle" });
+  }
+});
+
+// Route to get brief driver details for the assignment dropdown
+router.get("/drivers", authenticateToken, async (req, res) => {
   try {
     const staffDetails = await getBriefStaffDetails();
 
     if (!staffDetails || staffDetails.length === 0) {
-      return res.status(404).json({ message: "No staff details found" });
+      return res.status(200).json([]);
     }
 
     return res.status(200).json(staffDetails);
-
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching brief staff details:", error);
-    return res.status(500).json({ message: "Error fetching staff details", error: error.message });
+    return res.status(500).json({ message: "Error fetching staff details" });
   }
 });
 
 export default router;
-
-
-
-
-
-
