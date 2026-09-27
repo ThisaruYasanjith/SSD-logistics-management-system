@@ -190,17 +190,3 @@ npm start
 | **Supplier & Return Handling** | Supplier records, return reports & damage handling |
 
 
----
-
-## 📄 License
-
-This project is intended for **academic use only** as part of SLIIT coursework.
-All rights reserved © 2025 by the original authors.
-
----
-
-## ⭐ Acknowledgments
-
-* **SLIIT** – BSc (Hons) in Information Technology – Year 2, Semester II
-* Lecturers, mentors, and project advisors
-* The open-source community for libraries and inspiration
