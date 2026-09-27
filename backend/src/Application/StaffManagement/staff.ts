@@ -167,7 +167,6 @@ export const addStaff = async (req: Request, res: Response) => {
 export const getAllStaff = async (req: Request, res: Response) => {
   try {
     const staff = await staffMembers.find();
-    console.log("Staff Data Sent:", staff);
 
     if (staff.length === 0) {
       return res.status(404).json({ message: "No staff found" });

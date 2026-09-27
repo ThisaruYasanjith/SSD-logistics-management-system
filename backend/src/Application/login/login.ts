@@ -16,7 +16,8 @@ export const login = async (req: Request, res: Response) => {
         const normalizedEmail = email.trim().toLowerCase();
 
         // 1. Check if user exists in database
-        let user = await staffMembers.findOne({ email: normalizedEmail });
+        // Explicitly load the hash for password verification, not for API responses
+        let user = await staffMembers.findOne({ email: normalizedEmail }).select("+password");
 
         // 2. If user is not in database, check default accounts fallback & auto-seed
         if (!user) {
