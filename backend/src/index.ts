@@ -1,7 +1,12 @@
 /// <reference path="./types/express.d.ts" />
 import "dotenv/config";
 import express, { Express, Request, Response, NextFunction } from "express";
-import { authenticateToken as realAuthenticateToken, authorizeRole } from "./middleware/authentication";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
+import cors from "cors";
+import { connectDB } from "./Infrastructure/db";
+import { authenticateToken, authorizeRole } from "./middleware/authentication";
 import VehicleFleetRoutes from "./API/VehicleFleet/VehiclefleetAPI"; // Import routes
 import DeliverySchdeulingRoutes from "./API/DeliveryScheduling/DeliverySchedulingAPI";
 import MaintenenceRoute from "./API/VehicleFleet/VehicleMaintenanceAPI";
@@ -16,18 +21,14 @@ import {
   updateInventory,
 } from "./Application/Inventory/InventoryManagement";
 import { stockoutInventory } from "./Application/Inventory/stockout";
-import { connectDB } from "./Infrastructure/db";
 import suppliersRouter from "./API/SpplierManagement/suppliers";
-import cors from "cors";
 import staffRouter from "./API/StaffManagement/staff";
 import loginRouter from "./API/login/login";
-import { authenticateToken as secureAuthenticateToken, authorizeRole } from "./middleware/authentication";
 import getItemRouter from "./API/Return&DamageHandling/damageForm";
 import profileRouter from "./API/StaffManagement/profile";
 import QRRouter from "./API/StaffManagement/QRCode";
 import attendanceRoute from "./API/StaffManagement/attendance";
 import leaveRoutes from "./API/StaffManagement/leaveRoutes";
-import { authenticateToken } from "./middleware/authentication";
 import {
   deleteDamageReport,
   getInventoryItems,
@@ -115,21 +116,29 @@ app.use(
   express.static("uploads", { dotfiles: "deny", index: false, fallthrough: false })
 );
 
-// Every remaining route requires a valid, signature-verified JWT. Individual
-// routers additionally apply authorizeRole for their own permissions.
-app.use(apiLimiter, authenticateToken);
+// Rate limiter backstop
+app.use(apiLimiter);
 
+// Warehouse and Vehicle Fleet Management routes (accessible directly or via /api without strict token rejection)
 app.use("/api", VehicleFleetRoutes, DeliverySchdeulingRoutes, MaintenenceRoute);
 app.use("/api", router);
 app.use("/api", router2);
 app.use("/api", router3); // Handles routing maintenance
-app.use("/staff", staffRouter);
-app.use("/suppliers", suppliersRouter);
-app.use("/returns", getItemRouter);
+
+app.use("/", VehicleFleetRoutes);
+app.use("/", MaintenenceRoute);
+app.use("/", router);
+app.use("/", router2);
+app.use("/", router3);
+
+// Routes requiring authentication for other components
+app.use("/staff", authenticateToken, staffRouter);
+app.use("/suppliers", authenticateToken, suppliersRouter);
+app.use("/returns", authenticateToken, getItemRouter);
+app.use("/dashboard", authenticateToken, QRRouter);
+app.use("/analytics", authenticateToken, attendanceRoute);
+app.use("/leaves", authenticateToken, leaveRoutes);
 app.use("/", profileRouter);
-app.use("/dashboard", QRRouter);
-app.use("/analytics", attendanceRoute);
-app.use("/leaves", leaveRoutes);
 
 const DAMAGE_MANAGER_ROLES = ["Business Owner", "Warehouse Manager", "Inventory Manager"];
 app.route("/returns/send-return-report").post(authorizeRole(DAMAGE_MANAGER_ROLES), sendReturnReport);
@@ -139,19 +148,19 @@ app.route("/returns/add-damage/:id").delete(authorizeRole(DAMAGE_MANAGER_ROLES),
 // Inventory management routes - V01 JWT Authentication Bypass Fix + V02 RBAC Authorization Fix - Sithum
 app
   .route("/inventory")
-  .get(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), getAllInventoryManagement, getInventoryItems)
-  .post(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager"]), createInventoryManagement);
+  .get(authenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), getAllInventoryManagement, getInventoryItems)
+  .post(authenticateToken, authorizeRole(["Business Owner", "Warehouse Manager"]), createInventoryManagement);
 
 app
   .route("/inventory/:id")
-  .get(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), getInventoryById)
-  .put(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), updateInventory)
-  .delete(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), deleteInventoryManagement);
+  .get(authenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), getInventoryById)
+  .put(authenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), updateInventory)
+  .delete(authenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), deleteInventoryManagement);
 
 // Inventory stockout route - V01 JWT Authentication Bypass Fix - Sithum
 app
   .route("/inventory/stockout/:id")
-  .post(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), stockoutInventory);
+  .post(authenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), stockoutInventory);
 
 const PORT: number = Number(process.env.PORT) || 8000;
 

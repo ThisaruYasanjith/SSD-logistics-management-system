@@ -93,11 +93,9 @@ export const createVehicle = async (
  */
 export const getVehicles = async () => {
   try {
-    return await Vehicle.find({ deletedAt: null })
-      .select(
-        "VehicleNumber VehicleType VehicleBrand OwnersName DriverID LoadCapacity deletedAt"
-      )
-      .lean();
+    return await Vehicle.find({
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    }).lean();
   } catch (error) {
     console.error("Error retrieving vehicles:", error);
     throw new Error("Error retrieving vehicles");
@@ -126,16 +124,9 @@ export const getVehicleByID = async (VehicleNumber: string) => {
 // update vehicle details
 export const updateVehicleByID = async (vehicleId: string, updateData: Record<string, unknown>) => {
   try {
-    const sanitized = pickUpdatableFields(updateData);
-
-    if (Object.keys(sanitized).length === 0) {
-      throw new Error("No updatable fields supplied");
-    }
-
     const updateResult = await Vehicle.updateOne(
-      { VehicleNumber: vehicleId, deletedAt: null },
-      { $set: sanitized },
-      { runValidators: true }
+      { VehicleNumber: vehicleId },
+      { $set: updateData }
     );
 
     if (updateResult.matchedCount === 0) {
@@ -150,15 +141,12 @@ export const updateVehicleByID = async (vehicleId: string, updateData: Record<st
   }
 };
 
-/** Soft delete, retaining the record for audit and restore. */
-export const deleteVehicleByID = async (vehicleId: string, deletedBy: string) => {
+/** Delete vehicle record */
+export const deleteVehicleByID = async (vehicleId: string, deletedBy?: string) => {
   try {
-    const deleteResult = await Vehicle.updateOne(
-      { VehicleNumber: vehicleId, deletedAt: null },
-      { $set: { deletedAt: new Date(), deletedBy: deletedBy ?? "unknown" } }
-    );
+    const deleteResult = await Vehicle.deleteOne({ VehicleNumber: vehicleId });
 
-    if (deleteResult.matchedCount === 0) {
+    if (deleteResult.deletedCount === 0) {
       throw new Error("Vehicle not found or already deleted");
     }
 

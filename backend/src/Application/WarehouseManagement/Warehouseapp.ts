@@ -35,7 +35,9 @@ const pickUpdatableFields = (updates: Record<string, unknown>): WarehouseUpdates
 /** Read all non-deleted warehouses. */
 export const getAllWarehouses = async () => {
   try {
-    return await Warehouse.find({ deletedAt: null }).lean();
+    return await Warehouse.find({
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    }).lean();
   } catch (error) {
     console.error("Error retrieving Warehouse:", error);
     throw new Error("Error retrieving Warehouse");

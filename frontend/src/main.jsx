@@ -95,7 +95,7 @@ const router = createBrowserRouter([
           {
             path: "warehouse",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff"]}>
                 <WarehouseManagement />
               </ProtectedRoute>
             )
@@ -111,7 +111,7 @@ const router = createBrowserRouter([
           {
             path: "warehouse/WarehouseDetails/:WarehouseID",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff"]}>
                 <WarehouseForm />
               </ProtectedRoute>
             )
@@ -119,7 +119,7 @@ const router = createBrowserRouter([
           {
             path: "warehouse/Maintainance",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Staff"]}>
                 <Maintainance />
               </ProtectedRoute>
             )
@@ -160,7 +160,7 @@ const router = createBrowserRouter([
           {
             path: "fleet",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff", "Driver"]}>
                 <VehicleFleetManagement />
               </ProtectedRoute>
             )
@@ -176,7 +176,7 @@ const router = createBrowserRouter([
           {
             path: "fleet/VehicleProfile/:VehicleNumber",
             element: (
-              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager"]}>
+              <ProtectedRoute allowedRoles={["Business Owner", "Warehouse Manager", "Inventory Manager", "Staff", "Driver"]}>
                 <Vehicleprofile />
               </ProtectedRoute>
             )

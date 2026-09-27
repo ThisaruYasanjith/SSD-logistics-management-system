@@ -120,6 +120,7 @@ const reportgenarate = async () => {
       // Routing Maintenance Table Headers
       const routingHeaders = ["RID", "Warehouse", "Date", "Water Bill", "Current Bill", "Description"];
       const routingColWidths = [40, 40, 30, 25, 25, 50];
+      const startX = 10;
 
       // Draw header background
       pdf.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
@@ -134,7 +135,7 @@ const reportgenarate = async () => {
       // Add headers
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(255, 255, 255);
-      currentX = startX;
+      let currentX = startX;
       routingHeaders.forEach((header, index) => {
         pdf.text(header, currentX + 2, y);
         currentX += routingColWidths[index];

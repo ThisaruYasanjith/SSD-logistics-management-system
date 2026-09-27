@@ -139,6 +139,10 @@ export default function MaintenanceFormTwo() {
     }
   };
 
+  const handleEdit = () => {
+    setEditMode(true);
+  };
+
   const handleCancel = () => {
     setFormData({
       requestId: formData.requestId,
