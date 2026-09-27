@@ -26,6 +26,7 @@ import suppliersRouter from "./API/SpplierManagement/suppliers";
 import cors from "cors";
 import staffRouter from "./API/StaffManagement/staff";
 import loginRouter from "./API/login/login";
+import { authenticateToken as secureAuthenticateToken, authorizeRole } from "./middleware/authentication";
 import getItemRouter from "./API/Return&DamageHandling/damageForm";
 import profileRouter from "./API/StaffManagement/profile";
 import QRRouter from "./API/StaffManagement/QRCode";
@@ -72,22 +73,22 @@ app.route("/returns/send-return-report").post(authorizeRole(DAMAGE_MANAGER_ROLES
 app.route("/returns/add-damage/:id").put(authorizeRole(DAMAGE_MANAGER_ROLES), updateDamageReport);
 app.route("/returns/add-damage/:id").delete(authorizeRole(DAMAGE_MANAGER_ROLES), deleteDamageReport);
 
-// Inventory management routes
+// Inventory management routes - V01 JWT Authentication Bypass Fix + V02 RBAC Authorization Fix - Sithum
 app
   .route("/inventory")
-  .get(getAllInventoryManagement, getInventoryItems)
-  .post(createInventoryManagement);
+  .get(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), getAllInventoryManagement, getInventoryItems)
+  .post(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager"]), createInventoryManagement);
 
 app
   .route("/inventory/:id")
-  .get(getInventoryById)
-  .put(updateInventory)
-  .delete(deleteInventoryManagement);
+  .get(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), getInventoryById)
+  .put(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), updateInventory)
+  .delete(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), deleteInventoryManagement);
 
-// Stockout route
+// Inventory stockout route - V01 JWT Authentication Bypass Fix - Sithum
 app
   .route("/inventory/stockout/:id")
-  .post(stockoutInventory);
+  .post(secureAuthenticateToken, authorizeRole(["Business Owner", "Warehouse Manager", "Inventory Manager"]), stockoutInventory);
 
 const PORT: number = Number(process.env.PORT) || 8000;
 

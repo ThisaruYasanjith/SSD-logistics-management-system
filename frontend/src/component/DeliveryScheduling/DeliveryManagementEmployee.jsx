@@ -64,7 +64,14 @@ const DeliveryManagementEmployee = () => {
 
         const fetchDeliveryData = async () => {
             try {
-                const response = await axios.get('http://localhost:8000/api/Delivery');
+                const token = localStorage.getItem("token");
+
+                // Delivery request - V01 JWT Authentication Bypass Fix - Sithum
+                const response = await axios.get('http://localhost:8000/api/Delivery', {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
                 setDeliveryData(response.data);
             } catch (error) {
                 console.error('Error fetching delivery data:', error);
