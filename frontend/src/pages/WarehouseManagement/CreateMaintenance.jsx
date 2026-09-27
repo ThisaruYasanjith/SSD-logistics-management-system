@@ -9,40 +9,12 @@ import {
   Paper,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const priorityOptions = ["Low", "Medium", "High"];
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function MaintenanceForm() {
   const [formData, setFormData] = useState({
     warehouseId: "",
@@ -65,7 +37,7 @@ export default function MaintenanceForm() {
         const response = await api.get("/Warehouse");
         setWarehouses(response.data);
       } catch (error) {
-        setError(error.response?.data?.message || "Failed to fetch warehouses.");
+        setError(errorMessage(error, "Failed to fetch warehouses."));
         toast.error("Failed to fetch warehouses.");
         console.error("Error fetching warehouses:", error);
       } finally {
@@ -116,7 +88,7 @@ export default function MaintenanceForm() {
       toast.success("Maintenance request submitted successfully!");
       navigate("/warehouse/Maintainance");
     } catch (error) {
-      setError(error.response?.data?.message || "Error submitting the request.");
+      setError(errorMessage(error, "Error submitting the request."));
       toast.error("Error submitting the request.");
       console.error("Error submitting form:", error);
     } finally {

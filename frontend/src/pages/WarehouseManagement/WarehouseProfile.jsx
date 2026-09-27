@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
   Box,
   Button,
@@ -22,34 +21,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function WarehouseForm() {
   const navigate = useNavigate();
   const { WarehouseID } = useParams();
@@ -75,7 +47,7 @@ export default function WarehouseForm() {
         setFormData(response.data);
         console.log("Fetched warehouse:", response.data);
       } catch (error) {
-        setError(error.response?.data?.message || "Error fetching warehouse.");
+        setError(errorMessage(error, "Error fetching warehouse."));
         toast.error("Error fetching warehouse.");
         console.error("Error fetching warehouse:", error);
       } finally {
@@ -146,7 +118,7 @@ export default function WarehouseForm() {
       setEditMode(false);
       navigate("/WarehouseSubmit");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error updating warehouse.");
+      toast.error(errorMessage(error, "Error updating warehouse."));
       console.error("Error updating warehouse:", error);
     }
   };
@@ -157,7 +129,7 @@ export default function WarehouseForm() {
       toast.success("Warehouse deleted successfully.");
       navigate("/WarehouseSubmit");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error deleting warehouse.");
+      toast.error(errorMessage(error, "Error deleting warehouse."));
       console.error("Error deleting warehouse:", error);
     }
   };

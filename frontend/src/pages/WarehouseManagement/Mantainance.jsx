@@ -10,41 +10,13 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import reportgenarate from "./Report"; // Import the report generation function
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
 import MuiTooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function Maintenance() {
   const navigate = useNavigate();
   const [maintenanceData, setMaintenanceData] = useState([]);
@@ -65,7 +37,7 @@ export default function Maintenance() {
       const { data } = await api.get("/maintenance");
       setMaintenanceData(data);
     } catch (error) {
-      setError(error.response?.data?.message || "Error fetching maintenance data.");
+      setError(errorMessage(error, "Error fetching maintenance data."));
       toast.error("Error fetching maintenance data.");
       console.error("Error fetching maintenance data:", error);
     } finally {

@@ -3,69 +3,84 @@ import mongoose from "mongoose";
 
 const VehicleSchema = new mongoose.Schema({
 
-  OwnersNIC: { 
-    type: String, 
-    required: true,  
-    minlength: 12,  
-    maxlength: 15,  
-  },
-  OwnersName: { 
-    type: String, 
+  OwnersNIC: {
+    type: String,
     required: true,
-    minlength: 3, 
-    maxlength: 100, 
+    trim: true,
+    minlength: 12,
+    maxlength: 15,
   },
-  ContactNumber: { 
-    type: String, 
-    required: true, 
-    match: /^[0-9]{10}$/, 
+  OwnersName: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 3,
+    maxlength: 100,
+  },
+  ContactNumber: {
+    type: String,
+    required: true,
+    trim: true,
+    match: /^[0-9]{10}$/,
   },
   Address: {
-    type: String, 
+    type: String,
     required: true,
+    trim: true,
     minlength: 5,
     maxlength: 255,
   },
   Email: {
-    type: String, 
+    type: String,
     required: true,
-    unique: true,  
-    match: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/, 
+    trim: true,
+    unique: true,
+    match: /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/,
   },
-  VehicleNumber: { 
-    type: String, 
+  VehicleNumber: {
+    type: String,
     required: true,
-    unique: true, 
-    maxlength: 20, 
+    trim: true,
+    unique: true,
+    minlength: 4,
+    maxlength: 20,
   },
-  VehicleType: { 
-    type: String, 
-    required: true, 
-    
+  VehicleType: {
+    type: String,
+    required: true,
+    trim: true,
+    enum: ["Lorry", "Van", "Three Wheeler"],
   },
-  FuelType: { 
-    type: String, 
-    required: true, 
-   
+  FuelType: {
+    type: String,
+    required: true,
+    trim: true,
+    enum: ["Diesel", "Petrol", "EV"],
   },
-  VehicleBrand: { 
-    type: String, 
-    required: true, 
-    maxlength: 50, 
+  VehicleBrand: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 1,
+    maxlength: 50,
   },
-  LoadCapacity: { 
-    type: Number, 
-    required: true, 
-    min: 0, // Load capacity cannot be negative
+  LoadCapacity: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 1000000,
   },
-  DriverID: { 
-    type: String, 
-    required: true, 
-   
+  DriverID: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 200,
   },
 
   Maintenance: [{ type: mongoose.Schema.Types.ObjectId, ref: 'maintenance' }],
 
+  deletedAt: { type: Date, default: null, index: true },
+  deletedBy: { type: String, default: null },
 });
 
 const Vehicle = mongoose.model("vehicles", VehicleSchema);

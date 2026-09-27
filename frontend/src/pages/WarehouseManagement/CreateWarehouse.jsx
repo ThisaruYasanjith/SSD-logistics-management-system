@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import {
   Box,
   Button,
@@ -19,34 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-// Create axios instance with interceptor
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
+import api, { errorMessage } from "../../utils/apiClient";
 export default function WarehouseForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -151,7 +123,7 @@ export default function WarehouseForm() {
       navigate("/Warehouse");
     } catch (error) {
       const message =
-        error.response?.data?.message || "An error occurred while creating the warehouse";
+        errorMessage(error, "An error occurred while creating the warehouse");
       setError(message);
       toast.error(message);
       console.error("Error creating warehouse:", error);
