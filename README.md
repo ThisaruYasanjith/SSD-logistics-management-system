@@ -20,7 +20,7 @@ A secure full-stack logistics and warehouse management web application designed 
 - **Source Reference & Attribution**: Forked and adapted from the original open-source Logistics Management System developed by **dulsara30** and contributors. All original codebase design, baseline architecture, and baseline assets are credited to the original authors. This repository has been hardened, refactored, and extended with vulnerability remediations and OAuth 2.0 / OpenID Connect authentication as part of our Secure Software Development (SSD) coursework.
 
 ### 3. VIDEO DEMONSTRATION
-- **YouTube Link**: [https://youtu.be/...]
+- **YouTube Link**: https://youtu.be/VMXkMkIjxvk
 
 
 ## 🚀 Table of Contents
