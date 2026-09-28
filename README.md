@@ -10,10 +10,10 @@ A secure full-stack logistics and warehouse management web application designed 
 ## 📌 Repository Information
 
 ### 1. GROUP MEMBERS
-- Member 1 Name: [Maddumahewa T.Y.] | Student ID: [IT23183636]
-- Member 2 Name: [Perera K.M.A] | Student ID: [IT23201750]
-- Member 3 Name: [Jayalal G.M.S.B] | Student ID: [IT23177482]
-- Member 4 Name: [A.A Abitharshan] | Student ID: [IT23393516]
+- Member 1 Name: Maddumahewa T.Y. | Student ID: IT23183636
+- Member 2 Name: Perera K.M.A | Student ID: IT23201750
+- Member 3 Name: Jayalal G.M.S.B | Student ID: IT23177482
+- Member 4 Name: A.A Abitharshan | Student ID: IT23393516
 
 ### 2. ORIGINAL PROJECT REPOSITORY
 - **Original GitHub URL**: https://github.com/dulsara30/logistics-management-system
